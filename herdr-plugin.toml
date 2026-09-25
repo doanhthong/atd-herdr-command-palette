@@ -1,0 +1,26 @@
+id = "atd.command-palette"
+name = "Command Palette"
+version = "0.1.0"
+min_herdr_version = "0.9.0"
+description = "Fuzzy-searchable command palette over the full Herdr socket API"
+platforms = ["macos"]
+
+[[panes]]
+id = "palette"
+title = "Command Palette"
+placement = "popup"
+width = "70%"
+height = "70%"
+command = ["node", "src/palette.js"]
+
+[[actions]]
+id = "open"
+title = "Open Command Palette"
+contexts = ["workspace"]
+command = ["herdr", "plugin", "pane", "open", "--plugin", "atd.command-palette", "--entrypoint", "palette"]
+
+[[keys.command]]
+key = "prefix+p"
+type = "plugin_action"
+command = "atd.command-palette.open"
+description = "open command palette"

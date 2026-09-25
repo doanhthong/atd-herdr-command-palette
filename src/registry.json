@@ -1,0 +1,2630 @@
+{
+  "generatedFromProtocol": 22,
+  "generatedAt": "2026-09-25T03:36:56.171Z",
+  "actions": [
+    {
+      "method": "agent.explain",
+      "title": "Agent: Explain",
+      "category": "agent",
+      "params": [
+        {
+          "name": "target",
+          "required": true,
+          "kind": "id",
+          "listSource": "agent.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "agent.focus",
+      "title": "Agent: Focus",
+      "category": "agent",
+      "params": [
+        {
+          "name": "target",
+          "required": true,
+          "kind": "id",
+          "listSource": "agent.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "agent.get",
+      "title": "Agent: Get",
+      "category": "agent",
+      "params": [
+        {
+          "name": "target",
+          "required": true,
+          "kind": "id",
+          "listSource": "agent.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "agent.list",
+      "title": "Agent: List",
+      "category": "agent",
+      "params": [],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "agent.prompt",
+      "title": "Agent: Prompt",
+      "category": "agent",
+      "params": [
+        {
+          "name": "target",
+          "required": true,
+          "kind": "id",
+          "listSource": "agent.list",
+          "promptable": true
+        },
+        {
+          "name": "text",
+          "required": true,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "wait",
+          "required": false,
+          "kind": "object",
+          "promptable": false
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "agent.read",
+      "title": "Agent: Read",
+      "category": "agent",
+      "params": [
+        {
+          "name": "format",
+          "required": false,
+          "kind": "enum",
+          "values": [
+            "text",
+            "ansi"
+          ],
+          "promptable": true
+        },
+        {
+          "name": "lines",
+          "required": false,
+          "kind": "integer",
+          "promptable": true
+        },
+        {
+          "name": "source",
+          "required": true,
+          "kind": "enum",
+          "values": [
+            "visible",
+            "recent",
+            "recent_unwrapped",
+            "detection"
+          ],
+          "promptable": true
+        },
+        {
+          "name": "strip_ansi",
+          "required": false,
+          "kind": "boolean",
+          "promptable": true
+        },
+        {
+          "name": "target",
+          "required": true,
+          "kind": "id",
+          "listSource": "agent.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "agent.rename",
+      "title": "Agent: Rename",
+      "category": "agent",
+      "params": [
+        {
+          "name": "name",
+          "required": false,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "target",
+          "required": true,
+          "kind": "id",
+          "listSource": "agent.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "agent.send_keys",
+      "title": "Agent: Send Keys",
+      "category": "agent",
+      "params": [
+        {
+          "name": "keys",
+          "required": true,
+          "kind": "array",
+          "promptable": false
+        },
+        {
+          "name": "target",
+          "required": true,
+          "kind": "id",
+          "listSource": "agent.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": true
+    },
+    {
+      "method": "agent.start",
+      "title": "Agent: Start",
+      "category": "agent",
+      "params": [
+        {
+          "name": "args",
+          "required": false,
+          "kind": "array",
+          "promptable": false
+        },
+        {
+          "name": "kind",
+          "required": true,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "name",
+          "required": true,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "pane_id",
+          "required": true,
+          "kind": "id",
+          "listSource": "pane.list",
+          "promptable": true
+        },
+        {
+          "name": "timeout_ms",
+          "required": false,
+          "kind": "integer",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "agent.view.clear",
+      "title": "Agent: View: Clear",
+      "category": "agent",
+      "params": [
+        {
+          "name": "source",
+          "required": false,
+          "kind": "string",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "agent.view.set",
+      "title": "Agent: View: Set",
+      "category": "agent",
+      "params": [
+        {
+          "name": "filter",
+          "required": false,
+          "kind": "object",
+          "promptable": false
+        },
+        {
+          "name": "label",
+          "required": false,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "sort",
+          "required": false,
+          "kind": "array",
+          "promptable": false
+        },
+        {
+          "name": "source",
+          "required": true,
+          "kind": "string",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "agent.wait",
+      "title": "Agent: Wait",
+      "category": "agent",
+      "params": [
+        {
+          "name": "target",
+          "required": true,
+          "kind": "id",
+          "listSource": "agent.list",
+          "promptable": true
+        },
+        {
+          "name": "timeout_ms",
+          "required": false,
+          "kind": "integer",
+          "promptable": true
+        },
+        {
+          "name": "until",
+          "required": false,
+          "kind": "array",
+          "promptable": false
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "client_shell.surface.set",
+      "title": "Client Shell: Surface: Set",
+      "category": "client_shell",
+      "params": [
+        {
+          "name": "active",
+          "required": true,
+          "kind": "boolean",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "client.window_title.clear",
+      "title": "Client: Window Title: Clear",
+      "category": "client",
+      "params": [],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "client.window_title.set",
+      "title": "Client: Window Title: Set",
+      "category": "client",
+      "params": [
+        {
+          "name": "title",
+          "required": true,
+          "kind": "string",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "command.invoke",
+      "title": "Command: Invoke",
+      "category": "command",
+      "params": [
+        {
+          "name": "command_id",
+          "required": true,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "pane_id",
+          "required": false,
+          "kind": "id",
+          "listSource": "pane.list",
+          "promptable": true
+        },
+        {
+          "name": "selection",
+          "required": false,
+          "kind": "object",
+          "promptable": false
+        },
+        {
+          "name": "tab_id",
+          "required": false,
+          "kind": "id",
+          "listSource": "tab.list",
+          "promptable": true
+        },
+        {
+          "name": "workspace_id",
+          "required": false,
+          "kind": "id",
+          "listSource": "workspace.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "events.subscribe",
+      "title": "Events: Subscribe",
+      "category": "events",
+      "params": [
+        {
+          "name": "subscriptions",
+          "required": true,
+          "kind": "array",
+          "promptable": false
+        }
+      ],
+      "hasUnsupportedRequiredParams": true
+    },
+    {
+      "method": "events.wait",
+      "title": "Events: Wait",
+      "category": "events",
+      "params": [
+        {
+          "name": "match_event",
+          "required": true,
+          "kind": "object",
+          "promptable": false
+        },
+        {
+          "name": "timeout_ms",
+          "required": false,
+          "kind": "integer",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": true
+    },
+    {
+      "method": "integration.install",
+      "title": "Integration: Install",
+      "category": "integration",
+      "params": [
+        {
+          "name": "target",
+          "required": true,
+          "kind": "enum",
+          "values": [
+            "pi",
+            "omp",
+            "claude",
+            "codex",
+            "copilot",
+            "devin",
+            "droid",
+            "kimi",
+            "opencode",
+            "kilo",
+            "hermes",
+            "qodercli",
+            "qwen",
+            "cursor",
+            "mastracode",
+            "antigravity_cli",
+            "grok"
+          ],
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "integration.list",
+      "title": "Integration: List",
+      "category": "integration",
+      "params": [],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "integration.uninstall",
+      "title": "Integration: Uninstall",
+      "category": "integration",
+      "params": [
+        {
+          "name": "target",
+          "required": true,
+          "kind": "enum",
+          "values": [
+            "pi",
+            "omp",
+            "claude",
+            "codex",
+            "copilot",
+            "devin",
+            "droid",
+            "kimi",
+            "opencode",
+            "kilo",
+            "hermes",
+            "qodercli",
+            "qwen",
+            "cursor",
+            "mastracode",
+            "antigravity_cli",
+            "grok"
+          ],
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "layout.apply",
+      "title": "Layout: Apply",
+      "category": "layout",
+      "params": [
+        {
+          "name": "focus",
+          "required": false,
+          "kind": "boolean",
+          "promptable": true
+        },
+        {
+          "name": "root",
+          "required": true,
+          "kind": "object",
+          "promptable": false
+        },
+        {
+          "name": "tab_id",
+          "required": false,
+          "kind": "id",
+          "listSource": "tab.list",
+          "promptable": true
+        },
+        {
+          "name": "tab_label",
+          "required": false,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "workspace_id",
+          "required": false,
+          "kind": "id",
+          "listSource": "workspace.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": true
+    },
+    {
+      "method": "layout.export",
+      "title": "Layout: Export",
+      "category": "layout",
+      "params": [
+        {
+          "name": "pane_id",
+          "required": false,
+          "kind": "id",
+          "listSource": "pane.list",
+          "promptable": true
+        },
+        {
+          "name": "tab_id",
+          "required": false,
+          "kind": "id",
+          "listSource": "tab.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "layout.set_split_ratio",
+      "title": "Layout: Set Split Ratio",
+      "category": "layout",
+      "params": [
+        {
+          "name": "pane_id",
+          "required": false,
+          "kind": "id",
+          "listSource": "pane.list",
+          "promptable": true
+        },
+        {
+          "name": "path",
+          "required": true,
+          "kind": "array",
+          "promptable": false
+        },
+        {
+          "name": "ratio",
+          "required": true,
+          "kind": "number",
+          "promptable": true
+        },
+        {
+          "name": "tab_id",
+          "required": false,
+          "kind": "id",
+          "listSource": "tab.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": true
+    },
+    {
+      "method": "notification.show",
+      "title": "Notification: Show",
+      "category": "notification",
+      "params": [
+        {
+          "name": "body",
+          "required": false,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "position",
+          "required": false,
+          "kind": "enum",
+          "values": [
+            "top-left",
+            "top-right",
+            "bottom-left",
+            "bottom-right"
+          ],
+          "promptable": true
+        },
+        {
+          "name": "sound",
+          "required": false,
+          "kind": "enum",
+          "values": [
+            "none",
+            "done",
+            "request"
+          ],
+          "promptable": true
+        },
+        {
+          "name": "title",
+          "required": true,
+          "kind": "string",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "pane.clear_agent_authority",
+      "title": "Pane: Clear Agent Authority",
+      "category": "pane",
+      "params": [
+        {
+          "name": "pane_id",
+          "required": true,
+          "kind": "id",
+          "listSource": "pane.list",
+          "promptable": true
+        },
+        {
+          "name": "seq",
+          "required": false,
+          "kind": "integer",
+          "promptable": true
+        },
+        {
+          "name": "source",
+          "required": false,
+          "kind": "string",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "pane.close",
+      "title": "Pane: Close",
+      "category": "pane",
+      "params": [
+        {
+          "name": "pane_id",
+          "required": true,
+          "kind": "id",
+          "listSource": "pane.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "pane.copy_motion",
+      "title": "Pane: Copy Motion",
+      "category": "pane",
+      "params": [
+        {
+          "name": "content_revision",
+          "required": false,
+          "kind": "integer",
+          "promptable": true
+        },
+        {
+          "name": "cursor",
+          "required": true,
+          "kind": "object",
+          "promptable": false
+        },
+        {
+          "name": "motion",
+          "required": true,
+          "kind": "enum",
+          "values": [
+            "line_end",
+            "first_non_blank",
+            "next_word_start",
+            "previous_word_start",
+            "next_word_end",
+            "next_big_word_start",
+            "previous_big_word_start",
+            "next_big_word_end",
+            "previous_paragraph",
+            "next_paragraph"
+          ],
+          "promptable": true
+        },
+        {
+          "name": "pane_id",
+          "required": true,
+          "kind": "id",
+          "listSource": "pane.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": true
+    },
+    {
+      "method": "pane.copy_search",
+      "title": "Pane: Copy Search",
+      "category": "pane",
+      "params": [
+        {
+          "name": "content_revision",
+          "required": true,
+          "kind": "integer",
+          "promptable": true
+        },
+        {
+          "name": "cursor",
+          "required": true,
+          "kind": "object",
+          "promptable": false
+        },
+        {
+          "name": "direction",
+          "required": true,
+          "kind": "enum",
+          "values": [
+            "forward",
+            "backward"
+          ],
+          "promptable": true
+        },
+        {
+          "name": "pane_id",
+          "required": true,
+          "kind": "id",
+          "listSource": "pane.list",
+          "promptable": true
+        },
+        {
+          "name": "previous",
+          "required": false,
+          "kind": "object",
+          "promptable": false
+        },
+        {
+          "name": "query",
+          "required": true,
+          "kind": "string",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": true
+    },
+    {
+      "method": "pane.current",
+      "title": "Pane: Current",
+      "category": "pane",
+      "params": [
+        {
+          "name": "caller_pane_id",
+          "required": false,
+          "kind": "string",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "pane.edges",
+      "title": "Pane: Edges",
+      "category": "pane",
+      "params": [
+        {
+          "name": "pane_id",
+          "required": false,
+          "kind": "id",
+          "listSource": "pane.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "pane.edit_scrollback",
+      "title": "Pane: Edit Scrollback",
+      "category": "pane",
+      "params": [
+        {
+          "name": "pane_id",
+          "required": true,
+          "kind": "id",
+          "listSource": "pane.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "pane.focus",
+      "title": "Pane: Focus",
+      "category": "pane",
+      "params": [
+        {
+          "name": "pane_id",
+          "required": true,
+          "kind": "id",
+          "listSource": "pane.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "pane.focus_direction",
+      "title": "Pane: Focus Direction",
+      "category": "pane",
+      "params": [
+        {
+          "name": "direction",
+          "required": true,
+          "kind": "enum",
+          "values": [
+            "left",
+            "right",
+            "up",
+            "down"
+          ],
+          "promptable": true
+        },
+        {
+          "name": "pane_id",
+          "required": false,
+          "kind": "id",
+          "listSource": "pane.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "pane.get",
+      "title": "Pane: Get",
+      "category": "pane",
+      "params": [
+        {
+          "name": "pane_id",
+          "required": true,
+          "kind": "id",
+          "listSource": "pane.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "pane.graphics.clear",
+      "title": "Pane: Graphics: Clear",
+      "category": "pane",
+      "params": [
+        {
+          "name": "layer_id",
+          "required": false,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "pane_id",
+          "required": true,
+          "kind": "id",
+          "listSource": "pane.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "pane.graphics.info",
+      "title": "Pane: Graphics: Info",
+      "category": "pane",
+      "params": [
+        {
+          "name": "pane_id",
+          "required": true,
+          "kind": "id",
+          "listSource": "pane.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "pane.graphics.set",
+      "title": "Pane: Graphics: Set",
+      "category": "pane",
+      "params": [
+        {
+          "name": "data_base64",
+          "required": false,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "format",
+          "required": true,
+          "kind": "enum",
+          "values": [
+            "png",
+            "rgb",
+            "rgba",
+            "bgra"
+          ],
+          "promptable": true
+        },
+        {
+          "name": "image_height",
+          "required": true,
+          "kind": "integer",
+          "promptable": true
+        },
+        {
+          "name": "image_width",
+          "required": true,
+          "kind": "integer",
+          "promptable": true
+        },
+        {
+          "name": "layer_id",
+          "required": false,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "pane_id",
+          "required": true,
+          "kind": "id",
+          "listSource": "pane.list",
+          "promptable": true
+        },
+        {
+          "name": "placement",
+          "required": false,
+          "kind": "object",
+          "promptable": false
+        },
+        {
+          "name": "z_index",
+          "required": false,
+          "kind": "integer",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "pane.input.set",
+      "title": "Pane: Input: Set",
+      "category": "pane",
+      "params": [
+        {
+          "name": "pane_id",
+          "required": true,
+          "kind": "id",
+          "listSource": "pane.list",
+          "promptable": true
+        },
+        {
+          "name": "right_click",
+          "required": true,
+          "kind": "enum",
+          "values": [
+            "herdr",
+            "pane"
+          ],
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "pane.layout",
+      "title": "Pane: Layout",
+      "category": "pane",
+      "params": [
+        {
+          "name": "pane_id",
+          "required": false,
+          "kind": "id",
+          "listSource": "pane.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "pane.link.activate",
+      "title": "Pane: Link: Activate",
+      "category": "pane",
+      "params": [
+        {
+          "name": "col",
+          "required": true,
+          "kind": "integer",
+          "promptable": true
+        },
+        {
+          "name": "content_revision",
+          "required": false,
+          "kind": "integer",
+          "promptable": true
+        },
+        {
+          "name": "offset_from_bottom",
+          "required": false,
+          "kind": "integer",
+          "promptable": true
+        },
+        {
+          "name": "pane_id",
+          "required": true,
+          "kind": "id",
+          "listSource": "pane.list",
+          "promptable": true
+        },
+        {
+          "name": "viewport_row",
+          "required": true,
+          "kind": "integer",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "pane.list",
+      "title": "Pane: List",
+      "category": "pane",
+      "params": [
+        {
+          "name": "workspace_id",
+          "required": false,
+          "kind": "id",
+          "listSource": "workspace.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "pane.move",
+      "title": "Pane: Move",
+      "category": "pane",
+      "params": [
+        {
+          "name": "destination",
+          "required": true,
+          "kind": "object",
+          "promptable": false
+        },
+        {
+          "name": "focus",
+          "required": false,
+          "kind": "boolean",
+          "promptable": true
+        },
+        {
+          "name": "pane_id",
+          "required": true,
+          "kind": "id",
+          "listSource": "pane.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": true
+    },
+    {
+      "method": "pane.neighbor",
+      "title": "Pane: Neighbor",
+      "category": "pane",
+      "params": [
+        {
+          "name": "direction",
+          "required": true,
+          "kind": "enum",
+          "values": [
+            "left",
+            "right",
+            "up",
+            "down"
+          ],
+          "promptable": true
+        },
+        {
+          "name": "pane_id",
+          "required": false,
+          "kind": "id",
+          "listSource": "pane.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "pane.process_info",
+      "title": "Pane: Process Info",
+      "category": "pane",
+      "params": [
+        {
+          "name": "pane_id",
+          "required": false,
+          "kind": "id",
+          "listSource": "pane.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "pane.read",
+      "title": "Pane: Read",
+      "category": "pane",
+      "params": [
+        {
+          "name": "format",
+          "required": false,
+          "kind": "enum",
+          "values": [
+            "text",
+            "ansi"
+          ],
+          "promptable": true
+        },
+        {
+          "name": "lines",
+          "required": false,
+          "kind": "integer",
+          "promptable": true
+        },
+        {
+          "name": "pane_id",
+          "required": true,
+          "kind": "id",
+          "listSource": "pane.list",
+          "promptable": true
+        },
+        {
+          "name": "source",
+          "required": true,
+          "kind": "enum",
+          "values": [
+            "visible",
+            "recent",
+            "recent_unwrapped",
+            "detection"
+          ],
+          "promptable": true
+        },
+        {
+          "name": "strip_ansi",
+          "required": false,
+          "kind": "boolean",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "pane.release_agent",
+      "title": "Pane: Release Agent",
+      "category": "pane",
+      "params": [
+        {
+          "name": "agent",
+          "required": true,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "pane_id",
+          "required": true,
+          "kind": "id",
+          "listSource": "pane.list",
+          "promptable": true
+        },
+        {
+          "name": "seq",
+          "required": false,
+          "kind": "integer",
+          "promptable": true
+        },
+        {
+          "name": "source",
+          "required": true,
+          "kind": "string",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "pane.rename",
+      "title": "Pane: Rename",
+      "category": "pane",
+      "params": [
+        {
+          "name": "label",
+          "required": false,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "pane_id",
+          "required": true,
+          "kind": "id",
+          "listSource": "pane.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "pane.report_agent",
+      "title": "Pane: Report Agent",
+      "category": "pane",
+      "params": [
+        {
+          "name": "agent",
+          "required": true,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "agent_session_id",
+          "required": false,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "agent_session_path",
+          "required": false,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "message",
+          "required": false,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "pane_id",
+          "required": true,
+          "kind": "id",
+          "listSource": "pane.list",
+          "promptable": true
+        },
+        {
+          "name": "seq",
+          "required": false,
+          "kind": "integer",
+          "promptable": true
+        },
+        {
+          "name": "source",
+          "required": true,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "state",
+          "required": true,
+          "kind": "enum",
+          "values": [
+            "idle",
+            "working",
+            "blocked",
+            "unknown"
+          ],
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "pane.report_agent_session",
+      "title": "Pane: Report Agent Session",
+      "category": "pane",
+      "params": [
+        {
+          "name": "agent",
+          "required": true,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "agent_session_id",
+          "required": false,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "agent_session_path",
+          "required": false,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "pane_id",
+          "required": true,
+          "kind": "id",
+          "listSource": "pane.list",
+          "promptable": true
+        },
+        {
+          "name": "seq",
+          "required": false,
+          "kind": "integer",
+          "promptable": true
+        },
+        {
+          "name": "session_start_source",
+          "required": false,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "source",
+          "required": true,
+          "kind": "string",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "pane.report_metadata",
+      "title": "Pane: Report Metadata",
+      "category": "pane",
+      "params": [
+        {
+          "name": "agent",
+          "required": false,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "applies_to_source",
+          "required": false,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "clear_display_agent",
+          "required": false,
+          "kind": "boolean",
+          "promptable": true
+        },
+        {
+          "name": "clear_state_labels",
+          "required": false,
+          "kind": "boolean",
+          "promptable": true
+        },
+        {
+          "name": "clear_title",
+          "required": false,
+          "kind": "boolean",
+          "promptable": true
+        },
+        {
+          "name": "display_agent",
+          "required": false,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "pane_id",
+          "required": true,
+          "kind": "id",
+          "listSource": "pane.list",
+          "promptable": true
+        },
+        {
+          "name": "seq",
+          "required": false,
+          "kind": "integer",
+          "promptable": true
+        },
+        {
+          "name": "source",
+          "required": true,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "state_labels",
+          "required": false,
+          "kind": "object",
+          "promptable": false
+        },
+        {
+          "name": "title",
+          "required": false,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "tokens",
+          "required": false,
+          "kind": "object",
+          "promptable": false
+        },
+        {
+          "name": "ttl_ms",
+          "required": false,
+          "kind": "integer",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "pane.resize",
+      "title": "Pane: Resize",
+      "category": "pane",
+      "params": [
+        {
+          "name": "amount",
+          "required": false,
+          "kind": "number",
+          "promptable": true
+        },
+        {
+          "name": "direction",
+          "required": true,
+          "kind": "enum",
+          "values": [
+            "left",
+            "right",
+            "up",
+            "down"
+          ],
+          "promptable": true
+        },
+        {
+          "name": "pane_id",
+          "required": false,
+          "kind": "id",
+          "listSource": "pane.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "pane.scroll",
+      "title": "Pane: Scroll",
+      "category": "pane",
+      "params": [
+        {
+          "name": "offset_from_bottom",
+          "required": true,
+          "kind": "integer",
+          "promptable": true
+        },
+        {
+          "name": "pane_id",
+          "required": true,
+          "kind": "id",
+          "listSource": "pane.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "pane.selection.read",
+      "title": "Pane: Selection: Read",
+      "category": "pane",
+      "params": [
+        {
+          "name": "anchor",
+          "required": true,
+          "kind": "object",
+          "promptable": false
+        },
+        {
+          "name": "content_revision",
+          "required": false,
+          "kind": "integer",
+          "promptable": true
+        },
+        {
+          "name": "cursor",
+          "required": true,
+          "kind": "object",
+          "promptable": false
+        },
+        {
+          "name": "pane_id",
+          "required": true,
+          "kind": "id",
+          "listSource": "pane.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": true
+    },
+    {
+      "method": "pane.send_input",
+      "title": "Pane: Send Input",
+      "category": "pane",
+      "params": [
+        {
+          "name": "keys",
+          "required": false,
+          "kind": "array",
+          "promptable": false
+        },
+        {
+          "name": "pane_id",
+          "required": true,
+          "kind": "id",
+          "listSource": "pane.list",
+          "promptable": true
+        },
+        {
+          "name": "text",
+          "required": false,
+          "kind": "string",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "pane.send_keys",
+      "title": "Pane: Send Keys",
+      "category": "pane",
+      "params": [
+        {
+          "name": "keys",
+          "required": true,
+          "kind": "array",
+          "promptable": false
+        },
+        {
+          "name": "pane_id",
+          "required": true,
+          "kind": "id",
+          "listSource": "pane.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": true
+    },
+    {
+      "method": "pane.send_text",
+      "title": "Pane: Send Text",
+      "category": "pane",
+      "params": [
+        {
+          "name": "pane_id",
+          "required": true,
+          "kind": "id",
+          "listSource": "pane.list",
+          "promptable": true
+        },
+        {
+          "name": "text",
+          "required": true,
+          "kind": "string",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "pane.split",
+      "title": "Pane: Split",
+      "category": "pane",
+      "params": [
+        {
+          "name": "cwd",
+          "required": false,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "direction",
+          "required": true,
+          "kind": "enum",
+          "values": [
+            "right",
+            "down"
+          ],
+          "promptable": true
+        },
+        {
+          "name": "env",
+          "required": false,
+          "kind": "object",
+          "promptable": false
+        },
+        {
+          "name": "focus",
+          "required": false,
+          "kind": "boolean",
+          "promptable": true
+        },
+        {
+          "name": "ratio",
+          "required": false,
+          "kind": "number",
+          "promptable": true
+        },
+        {
+          "name": "right_click",
+          "required": false,
+          "kind": "enum",
+          "values": [
+            "herdr",
+            "pane"
+          ],
+          "promptable": true
+        },
+        {
+          "name": "target_pane_id",
+          "required": false,
+          "kind": "id",
+          "listSource": "pane.list",
+          "promptable": true
+        },
+        {
+          "name": "workspace_id",
+          "required": false,
+          "kind": "id",
+          "listSource": "workspace.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "pane.swap",
+      "title": "Pane: Swap",
+      "category": "pane",
+      "params": [
+        {
+          "name": "direction",
+          "required": false,
+          "kind": "enum",
+          "values": [
+            "left",
+            "right",
+            "up",
+            "down"
+          ],
+          "promptable": true
+        },
+        {
+          "name": "pane_id",
+          "required": false,
+          "kind": "id",
+          "listSource": "pane.list",
+          "promptable": true
+        },
+        {
+          "name": "source_pane_id",
+          "required": false,
+          "kind": "id",
+          "listSource": "pane.list",
+          "promptable": true
+        },
+        {
+          "name": "target_pane_id",
+          "required": false,
+          "kind": "id",
+          "listSource": "pane.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "pane.wait_for_output",
+      "title": "Pane: Wait For Output",
+      "category": "pane",
+      "params": [
+        {
+          "name": "lines",
+          "required": false,
+          "kind": "integer",
+          "promptable": true
+        },
+        {
+          "name": "match",
+          "required": true,
+          "kind": "object",
+          "promptable": false
+        },
+        {
+          "name": "pane_id",
+          "required": true,
+          "kind": "id",
+          "listSource": "pane.list",
+          "promptable": true
+        },
+        {
+          "name": "source",
+          "required": true,
+          "kind": "enum",
+          "values": [
+            "visible",
+            "recent",
+            "recent_unwrapped",
+            "detection"
+          ],
+          "promptable": true
+        },
+        {
+          "name": "strip_ansi",
+          "required": false,
+          "kind": "boolean",
+          "promptable": true
+        },
+        {
+          "name": "timeout_ms",
+          "required": false,
+          "kind": "integer",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": true
+    },
+    {
+      "method": "pane.zoom",
+      "title": "Pane: Zoom",
+      "category": "pane",
+      "params": [
+        {
+          "name": "mode",
+          "required": false,
+          "kind": "enum",
+          "values": [
+            "toggle",
+            "on",
+            "off"
+          ],
+          "promptable": true
+        },
+        {
+          "name": "pane_id",
+          "required": false,
+          "kind": "id",
+          "listSource": "pane.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "ping",
+      "title": "Ping",
+      "category": "ping",
+      "params": [],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "plugin.action.invoke",
+      "title": "Plugin: Action: Invoke",
+      "category": "plugin",
+      "params": [
+        {
+          "name": "action_id",
+          "required": true,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "context",
+          "required": false,
+          "kind": "object",
+          "promptable": false
+        },
+        {
+          "name": "plugin_id",
+          "required": false,
+          "kind": "id",
+          "listSource": "plugin.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "plugin.action.list",
+      "title": "Plugin: Action: List",
+      "category": "plugin",
+      "params": [
+        {
+          "name": "plugin_id",
+          "required": false,
+          "kind": "id",
+          "listSource": "plugin.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "plugin.disable",
+      "title": "Plugin: Disable",
+      "category": "plugin",
+      "params": [
+        {
+          "name": "plugin_id",
+          "required": true,
+          "kind": "id",
+          "listSource": "plugin.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "plugin.enable",
+      "title": "Plugin: Enable",
+      "category": "plugin",
+      "params": [
+        {
+          "name": "plugin_id",
+          "required": true,
+          "kind": "id",
+          "listSource": "plugin.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "plugin.link",
+      "title": "Plugin: Link",
+      "category": "plugin",
+      "params": [
+        {
+          "name": "enabled",
+          "required": false,
+          "kind": "boolean",
+          "promptable": true
+        },
+        {
+          "name": "path",
+          "required": true,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "source",
+          "required": false,
+          "kind": "object",
+          "promptable": false
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "plugin.list",
+      "title": "Plugin: List",
+      "category": "plugin",
+      "params": [
+        {
+          "name": "plugin_id",
+          "required": false,
+          "kind": "id",
+          "listSource": "plugin.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "plugin.log.list",
+      "title": "Plugin: Log: List",
+      "category": "plugin",
+      "params": [
+        {
+          "name": "limit",
+          "required": false,
+          "kind": "integer",
+          "promptable": true
+        },
+        {
+          "name": "plugin_id",
+          "required": false,
+          "kind": "id",
+          "listSource": "plugin.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "plugin.pane.close",
+      "title": "Plugin: Pane: Close",
+      "category": "plugin",
+      "params": [
+        {
+          "name": "pane_id",
+          "required": true,
+          "kind": "id",
+          "listSource": "pane.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "plugin.pane.focus",
+      "title": "Plugin: Pane: Focus",
+      "category": "plugin",
+      "params": [
+        {
+          "name": "pane_id",
+          "required": true,
+          "kind": "id",
+          "listSource": "pane.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "plugin.pane.open",
+      "title": "Plugin: Pane: Open",
+      "category": "plugin",
+      "params": [
+        {
+          "name": "cwd",
+          "required": false,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "direction",
+          "required": false,
+          "kind": "enum",
+          "values": [
+            "right",
+            "down"
+          ],
+          "promptable": true
+        },
+        {
+          "name": "entrypoint",
+          "required": true,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "env",
+          "required": false,
+          "kind": "object",
+          "promptable": false
+        },
+        {
+          "name": "focus",
+          "required": false,
+          "kind": "boolean",
+          "promptable": true
+        },
+        {
+          "name": "height",
+          "required": false,
+          "kind": "object",
+          "promptable": false
+        },
+        {
+          "name": "placement",
+          "required": false,
+          "kind": "enum",
+          "values": [
+            "overlay",
+            "popup",
+            "split",
+            "tab",
+            "zoomed"
+          ],
+          "promptable": true
+        },
+        {
+          "name": "plugin_id",
+          "required": true,
+          "kind": "id",
+          "listSource": "plugin.list",
+          "promptable": true
+        },
+        {
+          "name": "target_pane_id",
+          "required": false,
+          "kind": "id",
+          "listSource": "pane.list",
+          "promptable": true
+        },
+        {
+          "name": "width",
+          "required": false,
+          "kind": "object",
+          "promptable": false
+        },
+        {
+          "name": "workspace_id",
+          "required": false,
+          "kind": "id",
+          "listSource": "workspace.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "plugin.unlink",
+      "title": "Plugin: Unlink",
+      "category": "plugin",
+      "params": [
+        {
+          "name": "plugin_id",
+          "required": true,
+          "kind": "id",
+          "listSource": "plugin.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "popup.close",
+      "title": "Popup: Close",
+      "category": "popup",
+      "params": [],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "product_announcement.dismiss",
+      "title": "Product Announcement: Dismiss",
+      "category": "product_announcement",
+      "params": [
+        {
+          "name": "id",
+          "required": true,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "version",
+          "required": true,
+          "kind": "string",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "release_notes.dismiss",
+      "title": "Release Notes: Dismiss",
+      "category": "release_notes",
+      "params": [
+        {
+          "name": "version",
+          "required": true,
+          "kind": "string",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "server.agent_manifests",
+      "title": "Server: Agent Manifests",
+      "category": "server",
+      "params": [],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "server.live_handoff",
+      "title": "Server: Live Handoff",
+      "category": "server",
+      "params": [
+        {
+          "name": "expected_protocol",
+          "required": false,
+          "kind": "integer",
+          "promptable": true
+        },
+        {
+          "name": "expected_version",
+          "required": false,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "import_exe",
+          "required": false,
+          "kind": "string",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "server.reload_agent_manifests",
+      "title": "Server: Reload Agent Manifests",
+      "category": "server",
+      "params": [],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "server.reload_config",
+      "title": "Server: Reload Config",
+      "category": "server",
+      "params": [],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "server.stop",
+      "title": "Server: Stop",
+      "category": "server",
+      "params": [],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "session.snapshot",
+      "title": "Session: Snapshot",
+      "category": "session",
+      "params": [],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "tab.close",
+      "title": "Tab: Close",
+      "category": "tab",
+      "params": [
+        {
+          "name": "tab_id",
+          "required": true,
+          "kind": "id",
+          "listSource": "tab.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "tab.create",
+      "title": "Tab: Create",
+      "category": "tab",
+      "params": [
+        {
+          "name": "cwd",
+          "required": false,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "env",
+          "required": false,
+          "kind": "object",
+          "promptable": false
+        },
+        {
+          "name": "focus",
+          "required": false,
+          "kind": "boolean",
+          "promptable": true
+        },
+        {
+          "name": "label",
+          "required": false,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "workspace_id",
+          "required": false,
+          "kind": "id",
+          "listSource": "workspace.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "tab.focus",
+      "title": "Tab: Focus",
+      "category": "tab",
+      "params": [
+        {
+          "name": "tab_id",
+          "required": true,
+          "kind": "id",
+          "listSource": "tab.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "tab.get",
+      "title": "Tab: Get",
+      "category": "tab",
+      "params": [
+        {
+          "name": "tab_id",
+          "required": true,
+          "kind": "id",
+          "listSource": "tab.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "tab.list",
+      "title": "Tab: List",
+      "category": "tab",
+      "params": [
+        {
+          "name": "workspace_id",
+          "required": false,
+          "kind": "id",
+          "listSource": "workspace.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "tab.move",
+      "title": "Tab: Move",
+      "category": "tab",
+      "params": [
+        {
+          "name": "insert_index",
+          "required": true,
+          "kind": "integer",
+          "promptable": true
+        },
+        {
+          "name": "tab_id",
+          "required": true,
+          "kind": "id",
+          "listSource": "tab.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "tab.rename",
+      "title": "Tab: Rename",
+      "category": "tab",
+      "params": [
+        {
+          "name": "label",
+          "required": true,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "tab_id",
+          "required": true,
+          "kind": "id",
+          "listSource": "tab.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "workspace.close",
+      "title": "Workspace: Close",
+      "category": "workspace",
+      "params": [
+        {
+          "name": "close_group",
+          "required": false,
+          "kind": "boolean",
+          "promptable": true
+        },
+        {
+          "name": "workspace_id",
+          "required": true,
+          "kind": "id",
+          "listSource": "workspace.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "workspace.create",
+      "title": "Workspace: Create",
+      "category": "workspace",
+      "params": [
+        {
+          "name": "cwd",
+          "required": false,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "env",
+          "required": false,
+          "kind": "object",
+          "promptable": false
+        },
+        {
+          "name": "focus",
+          "required": false,
+          "kind": "boolean",
+          "promptable": true
+        },
+        {
+          "name": "label",
+          "required": false,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "source_workspace_id",
+          "required": false,
+          "kind": "id",
+          "listSource": "workspace.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "workspace.focus",
+      "title": "Workspace: Focus",
+      "category": "workspace",
+      "params": [
+        {
+          "name": "workspace_id",
+          "required": true,
+          "kind": "id",
+          "listSource": "workspace.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "workspace.get",
+      "title": "Workspace: Get",
+      "category": "workspace",
+      "params": [
+        {
+          "name": "workspace_id",
+          "required": true,
+          "kind": "id",
+          "listSource": "workspace.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "workspace.list",
+      "title": "Workspace: List",
+      "category": "workspace",
+      "params": [],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "workspace.move",
+      "title": "Workspace: Move",
+      "category": "workspace",
+      "params": [
+        {
+          "name": "insert_index",
+          "required": true,
+          "kind": "integer",
+          "promptable": true
+        },
+        {
+          "name": "workspace_id",
+          "required": true,
+          "kind": "id",
+          "listSource": "workspace.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "workspace.move_block",
+      "title": "Workspace: Move Block",
+      "category": "workspace",
+      "params": [
+        {
+          "name": "before_workspace_id",
+          "required": false,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "workspace_ids",
+          "required": true,
+          "kind": "array",
+          "promptable": false
+        }
+      ],
+      "hasUnsupportedRequiredParams": true
+    },
+    {
+      "method": "workspace.rename",
+      "title": "Workspace: Rename",
+      "category": "workspace",
+      "params": [
+        {
+          "name": "label",
+          "required": true,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "workspace_id",
+          "required": true,
+          "kind": "id",
+          "listSource": "workspace.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "workspace.report_metadata",
+      "title": "Workspace: Report Metadata",
+      "category": "workspace",
+      "params": [
+        {
+          "name": "seq",
+          "required": false,
+          "kind": "integer",
+          "promptable": true
+        },
+        {
+          "name": "source",
+          "required": true,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "tokens",
+          "required": true,
+          "kind": "object",
+          "promptable": false
+        },
+        {
+          "name": "ttl_ms",
+          "required": false,
+          "kind": "integer",
+          "promptable": true
+        },
+        {
+          "name": "workspace_id",
+          "required": true,
+          "kind": "id",
+          "listSource": "workspace.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": true
+    },
+    {
+      "method": "worktree.create",
+      "title": "Worktree: Create",
+      "category": "worktree",
+      "params": [
+        {
+          "name": "base",
+          "required": false,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "branch",
+          "required": false,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "cwd",
+          "required": false,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "focus",
+          "required": false,
+          "kind": "boolean",
+          "promptable": true
+        },
+        {
+          "name": "label",
+          "required": false,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "path",
+          "required": false,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "trust_repository",
+          "required": false,
+          "kind": "boolean",
+          "promptable": true
+        },
+        {
+          "name": "workspace_id",
+          "required": false,
+          "kind": "id",
+          "listSource": "workspace.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "worktree.list",
+      "title": "Worktree: List",
+      "category": "worktree",
+      "params": [
+        {
+          "name": "cwd",
+          "required": false,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "trust_repository",
+          "required": false,
+          "kind": "boolean",
+          "promptable": true
+        },
+        {
+          "name": "workspace_id",
+          "required": false,
+          "kind": "id",
+          "listSource": "workspace.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "worktree.open",
+      "title": "Worktree: Open",
+      "category": "worktree",
+      "params": [
+        {
+          "name": "branch",
+          "required": false,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "cwd",
+          "required": false,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "focus",
+          "required": false,
+          "kind": "boolean",
+          "promptable": true
+        },
+        {
+          "name": "label",
+          "required": false,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "path",
+          "required": false,
+          "kind": "string",
+          "promptable": true
+        },
+        {
+          "name": "trust_repository",
+          "required": false,
+          "kind": "boolean",
+          "promptable": true
+        },
+        {
+          "name": "workspace_id",
+          "required": false,
+          "kind": "id",
+          "listSource": "workspace.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    },
+    {
+      "method": "worktree.remove",
+      "title": "Worktree: Remove",
+      "category": "worktree",
+      "params": [
+        {
+          "name": "force",
+          "required": false,
+          "kind": "boolean",
+          "promptable": true
+        },
+        {
+          "name": "trust_repository",
+          "required": false,
+          "kind": "boolean",
+          "promptable": true
+        },
+        {
+          "name": "workspace_id",
+          "required": true,
+          "kind": "id",
+          "listSource": "workspace.list",
+          "promptable": true
+        }
+      ],
+      "hasUnsupportedRequiredParams": false
+    }
+  ]
+}
