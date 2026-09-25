@@ -52,6 +52,44 @@ explains the error when selected; a path that doesn't exist is reported
 instead of being sent to Herdr. The file is read fresh on every palette open,
 so edits need no restart.
 
+A separate **Space Config** group has commands for managing the file itself,
+so you never have to hand-edit `spaces.json`:
+
+- **Add space to config…**: prompts for a path, then an optional label, and
+  appends `{ path, label? }` to `spaces.json` (creating the file and its
+  directory if needed).
+- **Remove space from config…**: pick one of the current presets to delete
+  from `spaces.json`.
+- **Open spaces.json**: opens a new tab in the current space and runs
+  `$EDITOR spaces.json` (falls back to `vi`), for edits the two commands above
+  don't cover (reordering, fixing a typo after a parse error, etc).
+- **Copy spaces.json path**: copies the file's absolute path to the clipboard
+  via `pbcopy`.
+
+Add/remove write the file and show a confirmation, but — like the rest of the
+palette — don't refresh the in-memory list, so reopen the palette to see the
+change reflected.
+
+## Quick actions
+
+The top of the palette has a **Quick Actions** group:
+
+- **New Claude tab**: pick a space (open spaces first, then the
+  `spaces.json` ones under **From config**). A new tab opens there, gets focus,
+  and runs `claude` (`pane.send_input` with `claude` + Enter). For an open
+  space this is `tab.create {workspace_id, focus: true}`, plus a
+  `workspace.focus` if that space isn't the current one. For a config space it's
+  `workspace.create {cwd, label, focus: true}`, and the new space's first tab
+  counts as the new tab.
+- **New tab**: same as above, but just a shell.
+- **New space**: `workspace.create {focus: true}`, no picker.
+
+Rows are styled for scanning: a green `●` marks the current agent, space, or
+id, agent tab names are bold, and preset paths and command method names are
+dim. Styles only use attribute-specific resets (`22`/`39`, never `0`), so the
+inverse-video highlight on the selected row survives them. `truncate` counts
+only the visible characters.
+
 ## File layout
 
 ```
@@ -133,10 +171,10 @@ process exits (which closes the popup). Everything lives in this one file:
   1. Show one fuzzy list (`pickFromList`) combining, in order: currently running
      agents (from a one-time `agent.list` + `tab.list` + `workspace.list` call
      at startup, each row rendered as two stacked lines — `<workspace label>`
-     then `<agent> — <tab label>` — via `pickFromList`'s `getLines` option,
-     current agent marked `(current)` and sorted first), then all open
+     then `<agent> — <tab label>` — via `pickFromList`'s `getDisplay` option,
+     current agent marked with a green `●` and sorted first), then all open
      workspaces (from that same `workspace.list` call, one row per workspace,
-     current workspace marked `(current)` and sorted first), then the
+     current workspace marked with `●` and sorted first), then the
      predefined spaces from `spaces.json` (`loadSpacePresets`, see
      **Predefined spaces**), then all actions
      where `!hasUnsupportedRequiredParams`. The list is

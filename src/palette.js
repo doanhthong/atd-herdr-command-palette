@@ -9,6 +9,7 @@ const net = require("node:net");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
+const { execFileSync } = require("node:child_process");
 
 const REGISTRY_PATH = path.join(__dirname, "registry.json");
 const PLUGIN_ID = "atd.command-palette";
@@ -186,10 +187,46 @@ function exitPalette(code) {
   process.exit(code ?? 0);
 }
 
+// Row styling. These only toggle their own attribute (22 = normal intensity,
+// 39 = default foreground) instead of a full `\x1b[0m` reset, so they can sit
+// inside a selected row without cancelling its inverse-video highlight.
+const bold = (s) => `\x1b[1m${s}\x1b[22m`;
+const dim = (s) => `\x1b[2m${s}\x1b[22m`;
+const green = (s) => `\x1b[32m${s}\x1b[39m`;
+const currentMark = (isCurrent) => (isCurrent ? `${green("●")} ` : "  ");
+
+// Truncates to `width` visible characters, skipping over SGR escape sequences
+// so styled strings neither miscount nor get cut mid-sequence.
 function truncate(str, width) {
   if (width <= 1) return "";
-  if (str.length <= width) return str;
-  return str.slice(0, Math.max(0, width - 1)) + "…";
+  const sgr = /\x1b\[[0-9;]*m/y;
+  let visible = 0;
+  for (let i = 0; i < str.length; ) {
+    sgr.lastIndex = i;
+    const m = sgr.exec(str);
+    if (m) {
+      i += m[0].length;
+      continue;
+    }
+    visible += 1;
+    i += 1;
+  }
+  if (visible <= width) return str;
+  let out = "";
+  let kept = 0;
+  for (let i = 0; i < str.length && kept < width - 1; ) {
+    sgr.lastIndex = i;
+    const m = sgr.exec(str);
+    if (m) {
+      out += m[0];
+      i += m[0].length;
+      continue;
+    }
+    out += str[i];
+    kept += 1;
+    i += 1;
+  }
+  return out + "\x1b[22;39m…";
 }
 
 function terminalSize() {
@@ -199,19 +236,21 @@ function terminalSize() {
   };
 }
 
-function pickFromList({ items, getText, getGroup, getLines, title, help }) {
+function pickFromList({ items, getText, getGroup, getDisplay, title, help }) {
   return new Promise((resolve) => {
     let query = "";
     let index = 0;
     let scrollOffset = 0;
     let filtered = rankItems(items, query, getText);
 
-    // Rows normally render as a single line; `getLines` lets an item (e.g. an
-    // agent row) render as several stacked lines instead. Falls back to
-    // `getText` for items it doesn't apply to.
+    // `getText` is the plain string fuzzy matching runs against; `getDisplay`
+    // is what's drawn — a styled string, or an array of stacked lines (e.g.
+    // an agent row). Falls back to `getText` for items it doesn't apply to.
     function linesFor(item) {
-      const lines = getLines && getLines(item);
-      return lines && lines.length > 0 ? lines : [getText(item)];
+      const display = getDisplay && getDisplay(item);
+      if (Array.isArray(display) && display.length > 0) return display;
+      if (typeof display === "string") return [display];
+      return [getText(item)];
     }
 
     // How many items starting at `start` fit within `maxRows` lines, counting
@@ -426,7 +465,8 @@ async function promptOneParam(action, param, context) {
     }
     const picked = await pickFromList({
       items,
-      getText: (it) => `${it.label}  ·  ${it.id}${it.id === defaultId ? "  (current)" : ""}`,
+      getText: (it) => `${it.label}  ·  ${it.id}`,
+      getDisplay: (it) => `${currentMark(it.id === defaultId)}${it.label}  ${dim(it.id)}`,
       title,
     });
     if (picked.result === "cancel") return { result: "cancel" };
@@ -485,13 +525,13 @@ async function loadQuickJumpItems(context) {
       const isCurrent = a.pane_id === context.pane_id;
       const tabLabel = tabLabelById.get(a.tab_id) || a.terminal_title_stripped || a.terminal_title || a.tab_id;
       const workspaceLabel = workspaceLabelById.get(a.workspace_id) || a.workspace_id;
-      const tabLine = `${a.agent ?? "agent"} — ${tabLabel}${isCurrent ? "  (current)" : ""}`;
+      const agentName = a.agent ?? "agent";
       return {
         __kind: "agent",
         pane_id: a.pane_id,
         isCurrent,
-        text: `${workspaceLabel} — ${tabLine}`,
-        lines: [workspaceLabel, tabLine],
+        text: `${workspaceLabel} — ${agentName} — ${tabLabel}`,
+        display: [`${currentMark(isCurrent)}${workspaceLabel}`, `  ${agentName} — ${bold(tabLabel)}`],
       };
     });
     agentItems.sort((a, b) => (a.isCurrent === b.isCurrent ? 0 : a.isCurrent ? -1 : 1));
@@ -499,11 +539,13 @@ async function loadQuickJumpItems(context) {
 
   const workspaceItems = workspaces.map((w) => {
     const isCurrent = w.workspace_id === context.workspace_id;
+    const label = w.label || w.workspace_id;
     return {
       __kind: "workspace",
       workspace_id: w.workspace_id,
       isCurrent,
-      text: `${w.label || w.workspace_id}${isCurrent ? "  (current)" : ""}`,
+      text: label,
+      display: `${currentMark(isCurrent)}${label}`,
     };
   });
   workspaceItems.sort((a, b) => (a.isCurrent === b.isCurrent ? 0 : a.isCurrent ? -1 : 1));
@@ -546,9 +588,50 @@ function loadSpacePresets() {
     .map((s) => {
       const dir = expandHome(s.path);
       const label = s.label || path.basename(dir);
-      return { __kind: "preset", label, path: dir, text: `${label}  ·  ${s.path}` };
+      return { __kind: "preset", label, path: dir, text: `${label}  ·  ${s.path}`, display: `  ${label}  ${dim(s.path)}` };
     });
 }
+
+function spacesConfigPath() {
+  return path.join(configDir(), "spaces.json");
+}
+
+// Reads spaces.json for editing (as opposed to `loadSpacePresets`, which
+// reads it for display and swallows errors into a row). A missing file reads
+// as an empty list — the file is only created once something is added.
+function readSpacesConfig() {
+  const file = spacesConfigPath();
+  let raw;
+  try {
+    raw = fs.readFileSync(file, "utf8");
+  } catch (err) {
+    if (err.code === "ENOENT") return { file, spaces: [] };
+    throw err;
+  }
+  const parsed = JSON.parse(raw);
+  if (!Array.isArray(parsed.spaces)) throw new Error('expected a top-level "spaces" array');
+  return { file, spaces: parsed.spaces };
+}
+
+function writeSpacesConfig(spaces) {
+  const file = spacesConfigPath();
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, JSON.stringify({ spaces }, null, 2) + "\n", "utf8");
+  return file;
+}
+
+function shellQuote(s) {
+  return `'${s.replace(/'/g, `'\\''`)}'`;
+}
+
+// Commands that manage spaces.json itself, shown alongside the presets it
+// produces so "add a space" and "use a space" live in the same group.
+const SPACE_CONFIG_ACTIONS = [
+  { __kind: "space_config", action: "add", text: "Add space to config…" },
+  { __kind: "space_config", action: "remove", text: "Remove space from config…" },
+  { __kind: "space_config", action: "open", text: "Open spaces.json" },
+  { __kind: "space_config", action: "copy", text: "Copy spaces.json path" },
+];
 
 async function showMessage(title, body) {
   const { cols } = terminalSize();
@@ -572,6 +655,40 @@ async function showResult(action, params, outcome) {
   out += "\n\x1b[2mpress any key to close\x1b[0m";
   process.stdout.write(out);
   await waitForAnyKey();
+}
+
+// ---- quick actions ----------------------------------------------------------
+
+const QUICK_ACTIONS = [
+  { __kind: "quick", quick: "claude_tab", text: "New Claude tab", runClaude: true },
+  { __kind: "quick", quick: "tab", text: "New tab", runClaude: false },
+  { __kind: "quick", quick: "space", text: "New space" },
+];
+
+// Opens a fresh tab in `target` — an open workspace row or a spaces.json
+// preset — focuses it, and optionally starts `claude` in it. A preset has no
+// workspace yet, so the new workspace's own first tab serves as "the new tab"
+// rather than stacking a second one on top. Returns an error message or null.
+async function openTabIn(target, { runClaude }, context) {
+  let outcome;
+  if (target.__kind === "preset") {
+    if (!fs.existsSync(target.path)) return `Path does not exist: ${target.path}`;
+    outcome = await safeCallMethod("workspace.create", { cwd: target.path, label: target.label, focus: true });
+  } else {
+    outcome = await safeCallMethod("tab.create", { workspace_id: target.workspace_id, focus: true });
+    if (!outcome.error && target.workspace_id !== context.workspace_id) {
+      const focused = await safeCallMethod("workspace.focus", { workspace_id: target.workspace_id });
+      if (focused.error) return focused.error.message;
+    }
+  }
+  if (outcome.error) return outcome.error.message;
+  if (runClaude) {
+    const pane = outcome.result && outcome.result.root_pane;
+    if (!pane) return "Herdr did not return the new tab's pane";
+    const sent = await safeCallMethod("pane.send_input", { pane_id: pane.pane_id, text: "claude", keys: ["Enter"] });
+    if (sent.error) return sent.error.message;
+  }
+  return null;
 }
 
 // ---- main flow --------------------------------------------------------
@@ -611,12 +728,14 @@ async function main() {
   process.stdout.write("\x1b[2J\x1b[H\x1b[2mLoading…\x1b[0m");
   const { agentItems, workspaceItems } = await loadQuickJumpItems(context);
   const presetItems = loadSpacePresets();
-  const topItems = [...agentItems, ...workspaceItems, ...presetItems, ...supported];
-  const isQuickItem = (item) => item.__kind === "agent" || item.__kind === "workspace" || item.__kind === "preset" || item.__kind === "preset_error";
+  const topItems = [...QUICK_ACTIONS, ...agentItems, ...workspaceItems, ...presetItems, ...SPACE_CONFIG_ACTIONS, ...supported];
+  const isQuickItem = (item) => item.__kind != null;
   const groupFor = (item) => {
+    if (item.__kind === "quick") return "Quick Actions";
     if (item.__kind === "agent") return "Agents";
     if (item.__kind === "workspace") return "Spaces";
     if (item.__kind === "preset" || item.__kind === "preset_error") return "New Space";
+    if (item.__kind === "space_config") return "Space Config";
     return humanParamName(item.category);
   };
 
@@ -632,12 +751,37 @@ async function main() {
       items: topItems,
       getText: (item) => (isQuickItem(item) ? item.text : `${item.title}   (${item.method})`),
       getGroup: groupFor,
-      getLines: (item) => (item.__kind === "agent" ? item.lines : undefined),
+      getDisplay: (item) => {
+        if (item.__kind === "quick" || item.__kind === "space_config") return `  ${item.text}`;
+        if (isQuickItem(item)) return item.display;
+        return `${item.title}   ${dim(`(${item.method})`)}`;
+      },
       title: "Herdr Command Palette",
     });
     if (top.result === "cancel") break;
 
     const action = top.item;
+
+    if (action.__kind === "quick" && action.quick === "space") {
+      const outcome = await safeCallMethod("workspace.create", { focus: true });
+      if (outcome.error) await showMessage("Failed to create space", outcome.error.message);
+      break;
+    }
+
+    if (action.__kind === "quick") {
+      const targets = [...workspaceItems, ...presetItems.filter((p) => p.__kind === "preset")];
+      const picked = await pickFromList({
+        items: targets,
+        getText: (item) => item.text,
+        getGroup: (item) => (item.__kind === "workspace" ? "Spaces" : "From config"),
+        getDisplay: (item) => item.display,
+        title: `${action.text} → Space`,
+      });
+      if (picked.result === "cancel") continue;
+      const error = await openTabIn(picked.item, action, context);
+      if (error) await showMessage(`${action.text} failed`, error);
+      break;
+    }
 
     if (action.__kind === "agent") {
       const outcome = await safeCallMethod("agent.focus", { target: action.pane_id });
@@ -664,6 +808,89 @@ async function main() {
       const outcome = await safeCallMethod("workspace.create", { cwd: action.path, label: action.label, focus: true });
       if (outcome.error) await showMessage("Failed to create workspace", outcome.error.message);
       break;
+    }
+
+    if (action.__kind === "space_config") {
+      if (action.action === "add") {
+        const pathInput = await promptText({ title: "Add space to config → Path", help: "~ ok · Enter confirm · Esc cancel" });
+        if (pathInput.result === "cancel") continue;
+        const pathValue = pathInput.value.trim();
+        if (!pathValue) continue;
+        const labelInput = await promptText({ title: "Add space to config → Label (optional)", help: "Enter confirm · Esc cancel" });
+        if (labelInput.result === "cancel") continue;
+        const labelValue = labelInput.value.trim();
+        try {
+          const { spaces } = readSpacesConfig();
+          spaces.push(labelValue ? { path: pathValue, label: labelValue } : { path: pathValue });
+          const file = writeSpacesConfig(spaces);
+          await showMessage("Space added", `${pathValue}\n\nSaved to ${file}.\nReopen the palette to see it under New Space.`);
+        } catch (err) {
+          await showMessage("Failed to add space", err.message);
+        }
+        break;
+      }
+
+      if (action.action === "remove") {
+        const removable = presetItems.filter((p) => p.__kind === "preset");
+        if (removable.length === 0) {
+          await showMessage("Remove space from config", "spaces.json has no entries to remove.");
+          continue;
+        }
+        const picked = await pickFromList({
+          items: removable,
+          getText: (it) => it.text,
+          getDisplay: (it) => it.display,
+          title: "Remove space from config",
+          help: "Enter remove · Esc cancel",
+        });
+        if (picked.result === "cancel") continue;
+        try {
+          const { spaces } = readSpacesConfig();
+          const idx = spaces.findIndex((s) => expandHome(s.path) === picked.item.path);
+          if (idx === -1) {
+            await showMessage("Remove space from config", "That entry no longer matches spaces.json — it may have changed on disk.");
+          } else {
+            spaces.splice(idx, 1);
+            const file = writeSpacesConfig(spaces);
+            await showMessage("Space removed", `${picked.item.label}\n\nSaved to ${file}.\nReopen the palette to refresh the list.`);
+          }
+        } catch (err) {
+          await showMessage("Failed to remove space", err.message);
+        }
+        break;
+      }
+
+      if (action.action === "open") {
+        const file = spacesConfigPath();
+        try {
+          fs.mkdirSync(path.dirname(file), { recursive: true });
+          if (!fs.existsSync(file)) writeSpacesConfig([]);
+        } catch (err) {
+          await showMessage("Failed to open spaces.json", err.message);
+          break;
+        }
+        const outcome = await safeCallMethod("tab.create", { workspace_id: context.workspace_id, focus: true });
+        const pane = outcome.result && outcome.result.root_pane;
+        if (outcome.error || !pane) {
+          await showMessage("Failed to open spaces.json", outcome.error ? outcome.error.message : "Herdr did not return the new tab's pane");
+          break;
+        }
+        const editor = process.env.EDITOR || "vi";
+        const sent = await safeCallMethod("pane.send_input", { pane_id: pane.pane_id, text: `${editor} ${shellQuote(file)}`, keys: ["Enter"] });
+        if (sent.error) await showMessage("Failed to open spaces.json", sent.error.message);
+        break;
+      }
+
+      if (action.action === "copy") {
+        const file = spacesConfigPath();
+        try {
+          execFileSync("pbcopy", [], { input: file });
+          await showMessage("Copied", `spaces.json path copied to clipboard:\n\n${file}`);
+        } catch (err) {
+          await showMessage("Failed to copy path", err.message);
+        }
+        continue;
+      }
     }
 
     const required = action.params.filter((p) => p.required);

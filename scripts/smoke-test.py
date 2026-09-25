@@ -119,6 +119,14 @@ def main():
         ("\x1b", 0.4),
     ]))
 
+    # Quick action space picker renders; back out before anything is created.
+    results.append(run("New Claude tab (space picker, Escape back, Escape to quit)", [
+        ("New Claude tab", 0.3),
+        ("\r", 0.4),
+        ("\x1b", 0.4),
+        ("\x1b", 0.4),
+    ]))
+
     print(f"\n{sum(results)}/{len(results)} scenarios exited cleanly")
     sys.exit(0 if all(results) else 1)
 
