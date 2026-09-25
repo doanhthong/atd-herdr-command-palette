@@ -90,6 +90,18 @@ dim. Styles only use attribute-specific resets (`22`/`39`, never `0`), so the
 inverse-video highlight on the selected row survives them. `truncate` counts
 only the visible characters.
 
+Rows also get an icon showing what selecting them does: a green `+` for
+anything that creates something (Quick Actions, `spaces.json` presets, **Add
+space to config…**), a red `−` for anything destructive (**Remove space from
+config…**, and the same destructive registry actions listed above), and `→`
+for anything that switches focus. For the 100+ generated registry actions
+this is inferred from the method name's last `.`-segment (`methodIcon` —
+`*.create` → `+`, `*.close`/`*.stop`/`*.remove`/`*.unlink`/`*.disable`/
+`*.delete` → `−`, anything with `focus` or `*.activate` → `→`); actions that
+don't fit any of those (e.g. `pane.split`, `pane.read`) get no icon. The two
+remaining **Space Config** commands get their own fixed icons: `✎` for **Open
+spaces.json**, `⧉` for **Copy spaces.json path**.
+
 ## File layout
 
 ```

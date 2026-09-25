@@ -193,7 +193,41 @@ function exitPalette(code) {
 const bold = (s) => `\x1b[1m${s}\x1b[22m`;
 const dim = (s) => `\x1b[2m${s}\x1b[22m`;
 const green = (s) => `\x1b[32m${s}\x1b[39m`;
+const red = (s) => `\x1b[31m${s}\x1b[39m`;
 const currentMark = (isCurrent) => (isCurrent ? `${green("●")} ` : "  ");
+
+// A 2-char "icon slot" prefixed to a row: `icon` (styled) + a space, or two
+// blank spaces when there's nothing to show — so icon and non-icon rows stay
+// aligned with each other and with `currentMark`.
+const iconSlot = (icon) => (icon ? `${icon} ` : "  ");
+
+// Registry actions have no per-action metadata beyond their method name, so
+// the icon is inferred from its last `.`-segment: what the action *does*
+// (create something, tear something down, switch focus) rather than what
+// it's about.
+const DESTRUCTIVE_VERBS = new Set(["close", "stop", "remove", "unlink", "disable", "delete"]);
+function methodIcon(method) {
+  const verb = method.split(".").pop();
+  if (verb === "create") return green("+");
+  if (DESTRUCTIVE_VERBS.has(verb)) return red("−");
+  if (verb.includes("focus") || verb === "activate") return "→";
+  return null;
+}
+
+// Icons for the palette's own synthetic rows (quick actions, space-config
+// commands, presets) — these know exactly what they do, so the icon is
+// hard-coded rather than inferred.
+function itemIcon(item) {
+  if (item.__kind === "quick") return green("+"); // new tab / new Claude tab / new space
+  if (item.__kind === "preset") return green("+"); // creates a new workspace
+  if (item.__kind === "space_config") {
+    if (item.action === "add") return green("+");
+    if (item.action === "remove") return red("−");
+    if (item.action === "open") return "✎";
+    if (item.action === "copy") return "⧉";
+  }
+  return null;
+}
 
 // Truncates to `width` visible characters, skipping over SGR escape sequences
 // so styled strings neither miscount nor get cut mid-sequence.
@@ -588,7 +622,7 @@ function loadSpacePresets() {
     .map((s) => {
       const dir = expandHome(s.path);
       const label = s.label || path.basename(dir);
-      return { __kind: "preset", label, path: dir, text: `${label}  ·  ${s.path}`, display: `  ${label}  ${dim(s.path)}` };
+      return { __kind: "preset", label, path: dir, text: `${label}  ·  ${s.path}`, display: `${iconSlot(green("+"))}${label}  ${dim(s.path)}` };
     });
 }
 
@@ -752,9 +786,9 @@ async function main() {
       getText: (item) => (isQuickItem(item) ? item.text : `${item.title}   (${item.method})`),
       getGroup: groupFor,
       getDisplay: (item) => {
-        if (item.__kind === "quick" || item.__kind === "space_config") return `  ${item.text}`;
+        if (item.__kind === "quick" || item.__kind === "space_config") return `${iconSlot(itemIcon(item))}${item.text}`;
         if (isQuickItem(item)) return item.display;
-        return `${item.title}   ${dim(`(${item.method})`)}`;
+        return `${iconSlot(methodIcon(item.method))}${item.title}   ${dim(`(${item.method})`)}`;
       },
       title: "Herdr Command Palette",
     });
@@ -839,7 +873,7 @@ async function main() {
         const picked = await pickFromList({
           items: removable,
           getText: (it) => it.text,
-          getDisplay: (it) => it.display,
+          getDisplay: (it) => `${iconSlot(red("−"))}${it.label}  ${dim(it.path)}`,
           title: "Remove space from config",
           help: "Enter remove · Esc cancel",
         });
