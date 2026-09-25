@@ -105,9 +105,21 @@ process exits (which closes the popup). Everything lives in this one file:
   rendering. `parseKeys` only recognizes plain chars, Enter, Backspace,
   Ctrl+C, Escape, and Up/Down arrows — no Home/End/PageUp/mouse/etc.
 - **Main flow** (`main`) — a `while (true)` loop:
-  1. Show all actions where `!hasUnsupportedRequiredParams` in one fuzzy list
-     (`pickFromList`). Escape here exits the whole palette.
-  2. For the selected action, walk its **required** params in order
+  1. Show one fuzzy list (`pickFromList`) combining, in order: currently running
+     agents (from a one-time `agent.list` + `tab.list` call at startup, each row
+     `<agent> — <tab label>`, current agent marked `(current)` and sorted
+     first), then all actions where `!hasUnsupportedRequiredParams`. The list is
+     rendered with non-selectable group headers (`pickFromList`'s `getGroup`
+     option) — an "Agents" header over the agent rows, then one header per
+     action `category` (`Agent`, `Pane`, `Tab`, `Workspace`, ...). Headers are
+     inferred purely from item order, so they only look right when same-group
+     items are contiguous, which holds here because `registry.json` is
+     generated sorted by method name (grouping categories together) and agent
+     rows are a contiguous block prepended before them. Escape here exits the
+     whole palette. Picking an agent row calls `agent.focus` directly with
+     that agent's pane id and exits immediately — no result screen, no param
+     prompts, since the target is already known.
+  2. For a selected **action** (not an agent row), walk its **required** params in order
      (optional params are never prompted — always omitted). Each param is
      either another `pickFromList` (enum values, or a live `*.list` lookup
      for `"id"` params, pre-sorted so the value matching

@@ -197,22 +197,58 @@ function terminalSize() {
   };
 }
 
-function pickFromList({ items, getText, title, help }) {
+function pickFromList({ items, getText, getGroup, title, help }) {
   return new Promise((resolve) => {
     let query = "";
     let index = 0;
+    let scrollOffset = 0;
     let filtered = rankItems(items, query, getText);
+
+    // How many items starting at `start` fit within `maxRows` lines, counting
+    // a header line whenever `getGroup` changes (so header overhead doesn't
+    // silently push rows past the terminal height).
+    function windowSize(start, maxRows) {
+      let used = 0;
+      let lastGroup;
+      let count = 0;
+      for (let i = start; i < filtered.length; i++) {
+        const group = getGroup ? getGroup(filtered[i].item) : undefined;
+        const cost = (getGroup && group !== lastGroup ? 1 : 0) + 1;
+        if (used + cost > maxRows) break;
+        used += cost;
+        lastGroup = group;
+        count += 1;
+      }
+      return Math.max(count, 1);
+    }
 
     function render() {
       const { cols, rows } = terminalSize();
       const maxRows = Math.max(3, rows - 5);
+
+      // Keep `index` inside the visible window, scrolling as needed.
+      if (index < scrollOffset) scrollOffset = index;
+      let size = windowSize(scrollOffset, maxRows);
+      while (index >= scrollOffset + size && scrollOffset < filtered.length - 1) {
+        scrollOffset += 1;
+        size = windowSize(scrollOffset, maxRows);
+      }
+
       let out = "\x1b[2J\x1b[H";
       out += `\x1b[1m${truncate(title, cols)}\x1b[0m\n`;
       out += `> ${query}\x1b[K\n\n`;
-      const visible = filtered.slice(0, maxRows);
+      const visible = filtered.slice(scrollOffset, scrollOffset + size);
+      let lastGroup;
       for (let i = 0; i < visible.length; i++) {
+        if (getGroup) {
+          const group = getGroup(visible[i].item);
+          if (group !== lastGroup) {
+            out += `\x1b[2m${truncate(group, cols)}\x1b[0m\n`;
+            lastGroup = group;
+          }
+        }
         const text = truncate(getText(visible[i].item), cols - 2);
-        if (i === index) out += `\x1b[7m› ${text}\x1b[0m\n`;
+        if (scrollOffset + i === index) out += `\x1b[7m› ${text}\x1b[0m\n`;
         else out += `  ${text}\n`;
       }
       if (filtered.length === 0) out += "\x1b[2m  (no matches)\x1b[0m\n";
@@ -223,6 +259,7 @@ function pickFromList({ items, getText, title, help }) {
     function refilter() {
       filtered = rankItems(items, query, getText);
       index = 0;
+      scrollOffset = 0;
     }
 
     function onData(chunk) {
@@ -401,6 +438,34 @@ async function promptOneParam(action, param, context) {
   return { result: "select", value: text.value };
 }
 
+async function loadAgentQuickJumpItems(context) {
+  const agentsResult = await safeCallMethod("agent.list", {});
+  if (agentsResult.error) return [];
+  const agents = (agentsResult.result && agentsResult.result.agents) || [];
+  if (agents.length === 0) return [];
+
+  const tabsResult = await safeCallMethod("tab.list", {});
+  const tabLabelById = new Map();
+  if (!tabsResult.error) {
+    for (const t of (tabsResult.result && tabsResult.result.tabs) || []) {
+      tabLabelById.set(t.tab_id, t.label || t.tab_id);
+    }
+  }
+
+  const items = agents.map((a) => {
+    const isCurrent = a.pane_id === context.pane_id;
+    const tabLabel = tabLabelById.get(a.tab_id) || a.terminal_title_stripped || a.terminal_title || a.tab_id;
+    return {
+      __kind: "agent",
+      pane_id: a.pane_id,
+      isCurrent,
+      text: `${a.agent ?? "agent"} — ${tabLabel}${isCurrent ? "  (current)" : ""}`,
+    };
+  });
+  items.sort((a, b) => (a.isCurrent === b.isCurrent ? 0 : a.isCurrent ? -1 : 1));
+  return items;
+}
+
 async function showMessage(title, body) {
   const { cols } = terminalSize();
   let out = "\x1b[2J\x1b[H";
@@ -455,6 +520,8 @@ async function main() {
   const registry = JSON.parse(fs.readFileSync(REGISTRY_PATH, "utf8"));
   const supported = registry.actions.filter((a) => !a.hasUnsupportedRequiredParams);
   const context = parseContext();
+  const agentItems = await loadAgentQuickJumpItems(context);
+  const topItems = [...agentItems, ...supported];
 
   process.stdin.setEncoding("utf8");
   process.stdin.setRawMode(true);
@@ -465,13 +532,21 @@ async function main() {
 
   while (true) {
     const top = await pickFromList({
-      items: supported,
-      getText: (a) => `${a.title}   (${a.method})`,
+      items: topItems,
+      getText: (item) => (item.__kind === "agent" ? item.text : `${item.title}   (${item.method})`),
+      getGroup: (item) => (item.__kind === "agent" ? "Agents" : humanParamName(item.category)),
       title: "Herdr Command Palette",
     });
     if (top.result === "cancel") break;
 
     const action = top.item;
+
+    if (action.__kind === "agent") {
+      const outcome = await safeCallMethod("agent.focus", { target: action.pane_id });
+      if (outcome.error) await showMessage("Failed to focus agent", outcome.error.message);
+      break;
+    }
+
     const required = action.params.filter((p) => p.required);
     const filled = {};
     let i = 0;
