@@ -27,6 +27,31 @@ Then press `prefix+p` inside Herdr, or run:
 herdr plugin action invoke atd.command-palette.open
 ```
 
+## Predefined spaces
+
+List the spaces you open often in
+`~/.config/herdr/plugins/config/atd.command-palette/spaces.json` (the dir
+`herdr plugin config-dir atd.command-palette` prints):
+
+```json
+{
+  "spaces": [
+    { "label": "herdr palette", "path": "~/git-projects/herdr-command-palette" },
+    { "path": "~/git-projects/holistics" }
+  ]
+}
+```
+
+They show up under a **New Space** header in the palette. Picking one calls
+`workspace.create {cwd, label, focus: true}`: a brand-new workspace at that
+path, focused right away (it always creates a new one, even if a workspace
+with that label is already open). `label` is optional (defaults to the path's
+last folder name); `path` may start with `~`. A missing file just hides the
+section; an unparseable one shows a single "spaces.json is invalid" row that
+explains the error when selected; a path that doesn't exist is reported
+instead of being sent to Herdr. The file is read fresh on every palette open,
+so edits need no restart.
+
 ## File layout
 
 ```
@@ -109,18 +134,26 @@ process exits (which closes the popup). Everything lives in this one file:
      agents (from a one-time `agent.list` + `tab.list` + `workspace.list` call
      at startup, each row rendered as two stacked lines — `<workspace label>`
      then `<agent> — <tab label>` — via `pickFromList`'s `getLines` option,
-     current agent marked `(current)` and sorted first), then all actions
+     current agent marked `(current)` and sorted first), then all open
+     workspaces (from that same `workspace.list` call, one row per workspace,
+     current workspace marked `(current)` and sorted first), then the
+     predefined spaces from `spaces.json` (`loadSpacePresets`, see
+     **Predefined spaces**), then all actions
      where `!hasUnsupportedRequiredParams`. The list is
      rendered with non-selectable group headers (`pickFromList`'s `getGroup`
-     option) — an "Agents" header over the agent rows, then one header per
-     action `category` (`Agent`, `Pane`, `Tab`, `Workspace`, ...). Headers are
-     inferred purely from item order, so they only look right when same-group
-     items are contiguous, which holds here because `registry.json` is
-     generated sorted by method name (grouping categories together) and agent
-     rows are a contiguous block prepended before them. Escape here exits the
-     whole palette. Picking an agent row calls `agent.focus` directly with
-     that agent's pane id and exits immediately — no result screen, no param
-     prompts, since the target is already known.
+     option) — an "Agents" header over the agent rows, a "Spaces" header over
+     the workspace rows, a "New Space" header over the presets, then one header per action `category` (`Agent`,
+     `Pane`, `Tab`, `Workspace`, ...). Headers are inferred purely from item
+     order, so they only look right when same-group items are contiguous,
+     which holds here because `registry.json` is generated sorted by method
+     name (grouping categories together) and the agent/workspace rows are
+     contiguous blocks prepended before them, in that order. Escape here
+     exits the whole palette. Picking an agent row calls `agent.focus`
+     directly with that agent's pane id, and picking a workspace row calls
+     `workspace.focus` with that workspace's id, and picking a preset calls
+     `workspace.create` with its path/label and `focus: true` — all exit
+     immediately, no result screen, no param prompts, since the target is
+     already known.
   2. For a selected **action** (not an agent row), walk its **required** params in order
      (optional params are never prompted — always omitted). Each param is
      either another `pickFromList` (enum values, or a live `*.list` lookup

@@ -7,9 +7,11 @@
 
 const net = require("node:net");
 const fs = require("node:fs");
+const os = require("node:os");
 const path = require("node:path");
 
 const REGISTRY_PATH = path.join(__dirname, "registry.json");
+const PLUGIN_ID = "atd.command-palette";
 
 // Methods that destroy or end something with no undo. Selecting one of these
 // requires an extra confirmation step.
@@ -452,18 +454,16 @@ async function promptOneParam(action, param, context) {
   return { result: "select", value: text.value };
 }
 
-async function loadAgentQuickJumpItems(context) {
+async function loadQuickJumpItems(context) {
   // agent.list, tab.list, and workspace.list are independent requests, each
   // paying its own fresh socket connect + round-trip (see callMethod) — fire
-  // them together instead of one after another.
+  // them together instead of one after another. Both the agent rows and the
+  // workspace rows below are built from this one fetch.
   const [agentsResult, tabsResult, workspacesResult] = await Promise.all([
     safeCallMethod("agent.list", {}),
     safeCallMethod("tab.list", {}),
     safeCallMethod("workspace.list", {}),
   ]);
-  if (agentsResult.error) return [];
-  const agents = (agentsResult.result && agentsResult.result.agents) || [];
-  if (agents.length === 0) return [];
 
   const tabLabelById = new Map();
   if (!tabsResult.error) {
@@ -472,28 +472,82 @@ async function loadAgentQuickJumpItems(context) {
     }
   }
 
+  const workspaces = (!workspacesResult.error && workspacesResult.result && workspacesResult.result.workspaces) || [];
   const workspaceLabelById = new Map();
-  if (!workspacesResult.error) {
-    for (const w of (workspacesResult.result && workspacesResult.result.workspaces) || []) {
-      workspaceLabelById.set(w.workspace_id, w.label || w.workspace_id);
-    }
+  for (const w of workspaces) {
+    workspaceLabelById.set(w.workspace_id, w.label || w.workspace_id);
   }
 
-  const items = agents.map((a) => {
-    const isCurrent = a.pane_id === context.pane_id;
-    const tabLabel = tabLabelById.get(a.tab_id) || a.terminal_title_stripped || a.terminal_title || a.tab_id;
-    const workspaceLabel = workspaceLabelById.get(a.workspace_id) || a.workspace_id;
-    const tabLine = `${a.agent ?? "agent"} — ${tabLabel}${isCurrent ? "  (current)" : ""}`;
+  let agentItems = [];
+  if (!agentsResult.error) {
+    const agents = (agentsResult.result && agentsResult.result.agents) || [];
+    agentItems = agents.map((a) => {
+      const isCurrent = a.pane_id === context.pane_id;
+      const tabLabel = tabLabelById.get(a.tab_id) || a.terminal_title_stripped || a.terminal_title || a.tab_id;
+      const workspaceLabel = workspaceLabelById.get(a.workspace_id) || a.workspace_id;
+      const tabLine = `${a.agent ?? "agent"} — ${tabLabel}${isCurrent ? "  (current)" : ""}`;
+      return {
+        __kind: "agent",
+        pane_id: a.pane_id,
+        isCurrent,
+        text: `${workspaceLabel} — ${tabLine}`,
+        lines: [workspaceLabel, tabLine],
+      };
+    });
+    agentItems.sort((a, b) => (a.isCurrent === b.isCurrent ? 0 : a.isCurrent ? -1 : 1));
+  }
+
+  const workspaceItems = workspaces.map((w) => {
+    const isCurrent = w.workspace_id === context.workspace_id;
     return {
-      __kind: "agent",
-      pane_id: a.pane_id,
+      __kind: "workspace",
+      workspace_id: w.workspace_id,
       isCurrent,
-      text: `${workspaceLabel} — ${tabLine}`,
-      lines: [workspaceLabel, tabLine],
+      text: `${w.label || w.workspace_id}${isCurrent ? "  (current)" : ""}`,
     };
   });
-  items.sort((a, b) => (a.isCurrent === b.isCurrent ? 0 : a.isCurrent ? -1 : 1));
-  return items;
+  workspaceItems.sort((a, b) => (a.isCurrent === b.isCurrent ? 0 : a.isCurrent ? -1 : 1));
+
+  return { agentItems, workspaceItems };
+}
+
+// ---- predefined spaces ------------------------------------------------------
+// User-maintained list of frequently used spaces, kept outside the repo in the
+// plugin's config dir (`herdr plugin config-dir atd.command-palette`).
+
+function configDir() {
+  return process.env.HERDR_PLUGIN_CONFIG_DIR || path.join(os.homedir(), ".config", "herdr", "plugins", "config", PLUGIN_ID);
+}
+
+function expandHome(p) {
+  if (p === "~") return os.homedir();
+  if (p.startsWith("~/")) return path.join(os.homedir(), p.slice(2));
+  return p;
+}
+
+function loadSpacePresets() {
+  const file = path.join(configDir(), "spaces.json");
+  let raw;
+  try {
+    raw = fs.readFileSync(file, "utf8");
+  } catch {
+    return []; // no config file: feature simply stays hidden
+  }
+  let spaces;
+  try {
+    const parsed = JSON.parse(raw);
+    spaces = parsed && parsed.spaces;
+    if (!Array.isArray(spaces)) throw new Error('expected a top-level "spaces" array');
+  } catch (err) {
+    return [{ __kind: "preset_error", file, message: err.message, text: "spaces.json is invalid — select for details" }];
+  }
+  return spaces
+    .filter((s) => s && typeof s.path === "string" && s.path)
+    .map((s) => {
+      const dir = expandHome(s.path);
+      const label = s.label || path.basename(dir);
+      return { __kind: "preset", label, path: dir, text: `${label}  ·  ${s.path}` };
+    });
 }
 
 async function showMessage(title, body) {
@@ -551,12 +605,20 @@ async function main() {
   const supported = registry.actions.filter((a) => !a.hasUnsupportedRequiredParams);
   const context = parseContext();
 
-  // agent.list/tab.list round-trip before the palette can render its first
-  // frame; show something immediately instead of leaving the terminal
-  // looking hung.
+  // agent.list/tab.list/workspace.list round-trip before the palette can
+  // render its first frame; show something immediately instead of leaving
+  // the terminal looking hung.
   process.stdout.write("\x1b[2J\x1b[H\x1b[2mLoading…\x1b[0m");
-  const agentItems = await loadAgentQuickJumpItems(context);
-  const topItems = [...agentItems, ...supported];
+  const { agentItems, workspaceItems } = await loadQuickJumpItems(context);
+  const presetItems = loadSpacePresets();
+  const topItems = [...agentItems, ...workspaceItems, ...presetItems, ...supported];
+  const isQuickItem = (item) => item.__kind === "agent" || item.__kind === "workspace" || item.__kind === "preset" || item.__kind === "preset_error";
+  const groupFor = (item) => {
+    if (item.__kind === "agent") return "Agents";
+    if (item.__kind === "workspace") return "Spaces";
+    if (item.__kind === "preset" || item.__kind === "preset_error") return "New Space";
+    return humanParamName(item.category);
+  };
 
   process.stdin.setEncoding("utf8");
   process.stdin.setRawMode(true);
@@ -568,8 +630,8 @@ async function main() {
   while (true) {
     const top = await pickFromList({
       items: topItems,
-      getText: (item) => (item.__kind === "agent" ? item.text : `${item.title}   (${item.method})`),
-      getGroup: (item) => (item.__kind === "agent" ? "Agents" : humanParamName(item.category)),
+      getText: (item) => (isQuickItem(item) ? item.text : `${item.title}   (${item.method})`),
+      getGroup: groupFor,
       getLines: (item) => (item.__kind === "agent" ? item.lines : undefined),
       title: "Herdr Command Palette",
     });
@@ -580,6 +642,27 @@ async function main() {
     if (action.__kind === "agent") {
       const outcome = await safeCallMethod("agent.focus", { target: action.pane_id });
       if (outcome.error) await showMessage("Failed to focus agent", outcome.error.message);
+      break;
+    }
+
+    if (action.__kind === "workspace") {
+      const outcome = await safeCallMethod("workspace.focus", { workspace_id: action.workspace_id });
+      if (outcome.error) await showMessage("Failed to focus workspace", outcome.error.message);
+      break;
+    }
+
+    if (action.__kind === "preset_error") {
+      await showMessage("Invalid spaces.json", `${action.file}\n\n${action.message}`);
+      continue;
+    }
+
+    if (action.__kind === "preset") {
+      if (!fs.existsSync(action.path)) {
+        await showMessage(`Can't create "${action.label}"`, `Path does not exist: ${action.path}`);
+        continue;
+      }
+      const outcome = await safeCallMethod("workspace.create", { cwd: action.path, label: action.label, focus: true });
+      if (outcome.error) await showMessage("Failed to create workspace", outcome.error.message);
       break;
     }
 
