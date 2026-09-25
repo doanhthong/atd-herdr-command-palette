@@ -106,9 +106,11 @@ process exits (which closes the popup). Everything lives in this one file:
   Ctrl+C, Escape, and Up/Down arrows — no Home/End/PageUp/mouse/etc.
 - **Main flow** (`main`) — a `while (true)` loop:
   1. Show one fuzzy list (`pickFromList`) combining, in order: currently running
-     agents (from a one-time `agent.list` + `tab.list` call at startup, each row
-     `<agent> — <tab label>`, current agent marked `(current)` and sorted
-     first), then all actions where `!hasUnsupportedRequiredParams`. The list is
+     agents (from a one-time `agent.list` + `tab.list` + `workspace.list` call
+     at startup, each row rendered as two stacked lines — `<workspace label>`
+     then `<agent> — <tab label>` — via `pickFromList`'s `getLines` option,
+     current agent marked `(current)` and sorted first), then all actions
+     where `!hasUnsupportedRequiredParams`. The list is
      rendered with non-selectable group headers (`pickFromList`'s `getGroup`
      option) — an "Agents" header over the agent rows, then one header per
      action `category` (`Agent`, `Pane`, `Tab`, `Workspace`, ...). Headers are

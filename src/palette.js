@@ -197,23 +197,32 @@ function terminalSize() {
   };
 }
 
-function pickFromList({ items, getText, getGroup, title, help }) {
+function pickFromList({ items, getText, getGroup, getLines, title, help }) {
   return new Promise((resolve) => {
     let query = "";
     let index = 0;
     let scrollOffset = 0;
     let filtered = rankItems(items, query, getText);
 
+    // Rows normally render as a single line; `getLines` lets an item (e.g. an
+    // agent row) render as several stacked lines instead. Falls back to
+    // `getText` for items it doesn't apply to.
+    function linesFor(item) {
+      const lines = getLines && getLines(item);
+      return lines && lines.length > 0 ? lines : [getText(item)];
+    }
+
     // How many items starting at `start` fit within `maxRows` lines, counting
     // a header line whenever `getGroup` changes (so header overhead doesn't
-    // silently push rows past the terminal height).
+    // silently push rows past the terminal height), plus each item's own
+    // line count.
     function windowSize(start, maxRows) {
       let used = 0;
       let lastGroup;
       let count = 0;
       for (let i = start; i < filtered.length; i++) {
         const group = getGroup ? getGroup(filtered[i].item) : undefined;
-        const cost = (getGroup && group !== lastGroup ? 1 : 0) + 1;
+        const cost = (getGroup && group !== lastGroup ? 1 : 0) + linesFor(filtered[i].item).length;
         if (used + cost > maxRows) break;
         used += cost;
         lastGroup = group;
@@ -247,9 +256,14 @@ function pickFromList({ items, getText, getGroup, title, help }) {
             lastGroup = group;
           }
         }
-        const text = truncate(getText(visible[i].item), cols - 2);
-        if (scrollOffset + i === index) out += `\x1b[7m› ${text}\x1b[0m\n`;
-        else out += `  ${text}\n`;
+        const selected = scrollOffset + i === index;
+        const lines = linesFor(visible[i].item);
+        lines.forEach((line, li) => {
+          const text = truncate(line, cols - 2);
+          const prefix = li === 0 && selected ? "› " : "  ";
+          if (selected) out += `\x1b[7m${prefix}${text}\x1b[0m\n`;
+          else out += `${prefix}${text}\n`;
+        });
       }
       if (filtered.length === 0) out += "\x1b[2m  (no matches)\x1b[0m\n";
       out += `\n\x1b[2m${help || "Enter select · Esc back"} · ${filtered.length}/${items.length}\x1b[0m`;
@@ -439,12 +453,18 @@ async function promptOneParam(action, param, context) {
 }
 
 async function loadAgentQuickJumpItems(context) {
-  const agentsResult = await safeCallMethod("agent.list", {});
+  // agent.list, tab.list, and workspace.list are independent requests, each
+  // paying its own fresh socket connect + round-trip (see callMethod) — fire
+  // them together instead of one after another.
+  const [agentsResult, tabsResult, workspacesResult] = await Promise.all([
+    safeCallMethod("agent.list", {}),
+    safeCallMethod("tab.list", {}),
+    safeCallMethod("workspace.list", {}),
+  ]);
   if (agentsResult.error) return [];
   const agents = (agentsResult.result && agentsResult.result.agents) || [];
   if (agents.length === 0) return [];
 
-  const tabsResult = await safeCallMethod("tab.list", {});
   const tabLabelById = new Map();
   if (!tabsResult.error) {
     for (const t of (tabsResult.result && tabsResult.result.tabs) || []) {
@@ -452,14 +472,24 @@ async function loadAgentQuickJumpItems(context) {
     }
   }
 
+  const workspaceLabelById = new Map();
+  if (!workspacesResult.error) {
+    for (const w of (workspacesResult.result && workspacesResult.result.workspaces) || []) {
+      workspaceLabelById.set(w.workspace_id, w.label || w.workspace_id);
+    }
+  }
+
   const items = agents.map((a) => {
     const isCurrent = a.pane_id === context.pane_id;
     const tabLabel = tabLabelById.get(a.tab_id) || a.terminal_title_stripped || a.terminal_title || a.tab_id;
+    const workspaceLabel = workspaceLabelById.get(a.workspace_id) || a.workspace_id;
+    const tabLine = `${a.agent ?? "agent"} — ${tabLabel}${isCurrent ? "  (current)" : ""}`;
     return {
       __kind: "agent",
       pane_id: a.pane_id,
       isCurrent,
-      text: `${a.agent ?? "agent"} — ${tabLabel}${isCurrent ? "  (current)" : ""}`,
+      text: `${workspaceLabel} — ${tabLine}`,
+      lines: [workspaceLabel, tabLine],
     };
   });
   items.sort((a, b) => (a.isCurrent === b.isCurrent ? 0 : a.isCurrent ? -1 : 1));
@@ -520,6 +550,11 @@ async function main() {
   const registry = JSON.parse(fs.readFileSync(REGISTRY_PATH, "utf8"));
   const supported = registry.actions.filter((a) => !a.hasUnsupportedRequiredParams);
   const context = parseContext();
+
+  // agent.list/tab.list round-trip before the palette can render its first
+  // frame; show something immediately instead of leaving the terminal
+  // looking hung.
+  process.stdout.write("\x1b[2J\x1b[H\x1b[2mLoading…\x1b[0m");
   const agentItems = await loadAgentQuickJumpItems(context);
   const topItems = [...agentItems, ...supported];
 
@@ -535,6 +570,7 @@ async function main() {
       items: topItems,
       getText: (item) => (item.__kind === "agent" ? item.text : `${item.title}   (${item.method})`),
       getGroup: (item) => (item.__kind === "agent" ? "Agents" : humanParamName(item.category)),
+      getLines: (item) => (item.__kind === "agent" ? item.lines : undefined),
       title: "Herdr Command Palette",
     });
     if (top.result === "cancel") break;
