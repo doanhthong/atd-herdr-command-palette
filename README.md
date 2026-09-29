@@ -243,7 +243,7 @@ process exits (which closes the popup). Everything lives in this one file:
 - **`platforms = ["macos", "windows"]`** in the manifest. Linux is untested.
   On Windows, `HERDR_SOCKET_PATH` is a `.sock` file path (Unix domain socket),
   which `net.createConnection` handles as-is. Platform differences: the config
-  dir falls back to `%APPDATA%herdr...`, "Copy spaces.json path" uses `clip`
+  dir falls back to `%APPDATA%\herdr\...`, "Copy spaces.json path" uses `clip`
   instead of `pbcopy`, and "Open spaces.json" falls back to `notepad` and
   double-quotes the path.
 - **No automated regression suite**, just `scripts/smoke-test.py` (manual,
