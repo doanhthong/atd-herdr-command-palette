@@ -241,8 +241,9 @@ process exits (which closes the popup). Everything lives in this one file:
   palette even though the schema supports them. This was a deliberate v1
   scope cut, not an oversight.
 - **`platforms = ["macos", "windows"]`** in the manifest. Linux is untested.
-  On Windows, `HERDR_SOCKET_PATH` is a `.sock` file path (Unix domain socket),
-  which `net.createConnection` handles as-is. Platform differences: the config
+  On Windows, `HERDR_SOCKET_PATH` points at a marker file, not a Unix socket
+  (connecting to it gives `ENOTSOCK`); the real endpoint is the named pipe
+  `\\.\pipe\<HERDR_SOCKET_PATH>`, which `callMethod` dials. Other platform differences: the config
   dir falls back to `%APPDATA%\herdr\...`, "Copy spaces.json path" uses `clip`
   instead of `pbcopy`, and "Open spaces.json" falls back to `notepad` and
   double-quotes the path.

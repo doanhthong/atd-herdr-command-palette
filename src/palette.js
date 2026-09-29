@@ -69,7 +69,9 @@ function callMethod(method, params) {
       return;
     }
     const id = `palette_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-    const sock = net.createConnection(socketPath);
+    // On Windows, herdr.sock is a marker file; the real endpoint is a named
+    // pipe whose name is the marker's full path.
+    const sock = net.createConnection(IS_WINDOWS ? `\\\\.\\pipe\\${socketPath}` : socketPath);
     let buf = "";
     sock.on("connect", () => {
       sock.write(JSON.stringify({ id, method, params: params ?? {} }) + "\n");
