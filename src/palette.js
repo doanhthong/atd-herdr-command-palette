@@ -11,6 +11,8 @@ const os = require("node:os");
 const path = require("node:path");
 const { execFileSync } = require("node:child_process");
 
+const IS_WINDOWS = process.platform === "win32";
+
 const REGISTRY_PATH = path.join(__dirname, "registry.json");
 const PLUGIN_ID = "atd.command-palette";
 
@@ -592,12 +594,16 @@ async function loadQuickJumpItems(context) {
 // plugin's config dir (`herdr plugin config-dir atd.command-palette`).
 
 function configDir() {
-  return process.env.HERDR_PLUGIN_CONFIG_DIR || path.join(os.homedir(), ".config", "herdr", "plugins", "config", PLUGIN_ID);
+  if (process.env.HERDR_PLUGIN_CONFIG_DIR) return process.env.HERDR_PLUGIN_CONFIG_DIR;
+  const base = IS_WINDOWS
+    ? path.join(process.env.APPDATA || path.join(os.homedir(), "AppData", "Roaming"), "herdr")
+    : path.join(os.homedir(), ".config", "herdr");
+  return path.join(base, "plugins", "config", PLUGIN_ID);
 }
 
 function expandHome(p) {
   if (p === "~") return os.homedir();
-  if (p.startsWith("~/")) return path.join(os.homedir(), p.slice(2));
+  if (p.startsWith("~/") || (IS_WINDOWS && p.startsWith("~\\"))) return path.join(os.homedir(), p.slice(2));
   return p;
 }
 
@@ -655,6 +661,7 @@ function writeSpacesConfig(spaces) {
 }
 
 function shellQuote(s) {
+  if (IS_WINDOWS) return `"${s.replace(/"/g, '""')}"`;
   return `'${s.replace(/'/g, `'\\''`)}'`;
 }
 
@@ -909,7 +916,7 @@ async function main() {
           await showMessage("Failed to open spaces.json", outcome.error ? outcome.error.message : "Herdr did not return the new tab's pane");
           break;
         }
-        const editor = process.env.EDITOR || "vi";
+        const editor = process.env.EDITOR || (IS_WINDOWS ? "notepad" : "vi");
         const sent = await safeCallMethod("pane.send_input", { pane_id: pane.pane_id, text: `${editor} ${shellQuote(file)}`, keys: ["Enter"] });
         if (sent.error) await showMessage("Failed to open spaces.json", sent.error.message);
         break;
@@ -918,7 +925,7 @@ async function main() {
       if (action.action === "copy") {
         const file = spacesConfigPath();
         try {
-          execFileSync("pbcopy", [], { input: file });
+          execFileSync(IS_WINDOWS ? "clip" : "pbcopy", [], { input: file });
           await showMessage("Copied", `spaces.json path copied to clipboard:\n\n${file}`);
         } catch (err) {
           await showMessage("Failed to copy path", err.message);

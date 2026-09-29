@@ -12,7 +12,7 @@ when applicable. Destructive actions (`server.stop`, `pane.close`,
 `plugin.disable`) require an extra confirmation step.
 
 Personal-use plugin, not published to the marketplace. Built and verified
-2026-09-25 against Herdr v0.9.0 (protocol 22) on macOS.
+2026-09-25 against Herdr v0.9.0 (protocol 22) on macOS; Windows support added 2026-09-29 (Herdr 0.9.0, Windows 11).
 
 ## Install
 
@@ -61,10 +61,10 @@ so you never have to hand-edit `spaces.json`:
 - **Remove space from config…**: pick one of the current presets to delete
   from `spaces.json`.
 - **Open spaces.json**: opens a new tab in the current space and runs
-  `$EDITOR spaces.json` (falls back to `vi`), for edits the two commands above
+  `$EDITOR spaces.json` (falls back to `vi`, or `notepad` on Windows), for edits the two commands above
   don't cover (reordering, fixing a typo after a parse error, etc).
 - **Copy spaces.json path**: copies the file's absolute path to the clipboard
-  via `pbcopy`.
+  via `pbcopy` (`clip` on Windows).
 
 Add/remove write the file and show a confirmation, but — like the rest of the
 palette — don't refresh the in-memory list, so reopen the palette to see the
@@ -240,10 +240,12 @@ process exits (which closes the popup). Everything lives in this one file:
   `notification.show`'s optional `position`/`sound` can't be set from the
   palette even though the schema supports them. This was a deliberate v1
   scope cut, not an oversight.
-- **`platforms = ["macos"]`** in the manifest — never tested on
-  Linux/Windows. The popup/ANSI/raw-mode code is plausibly portable, but
-  `HERDR_SOCKET_PATH` is a named pipe on Windows (`palette.js`'s `net`
-  client currently assumes a Unix domain socket path works as-is).
+- **`platforms = ["macos", "windows"]`** in the manifest. Linux is untested.
+  On Windows, `HERDR_SOCKET_PATH` is a `.sock` file path (Unix domain socket),
+  which `net.createConnection` handles as-is. Platform differences: the config
+  dir falls back to `%APPDATA%herdr...`, "Copy spaces.json path" uses `clip`
+  instead of `pbcopy`, and "Open spaces.json" falls back to `notepad` and
+  double-quotes the path.
 - **No automated regression suite**, just `scripts/smoke-test.py` (manual,
   see below). It checks a handful of representative paths, not all 89
   actions.

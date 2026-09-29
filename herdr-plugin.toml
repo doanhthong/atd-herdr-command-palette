@@ -3,7 +3,7 @@ name = "Command Palette"
 version = "0.1.0"
 min_herdr_version = "0.9.0"
 description = "Fuzzy-searchable command palette over the full Herdr socket API"
-platforms = ["macos"]
+platforms = ["macos", "windows"]
 
 [[panes]]
 id = "palette"
