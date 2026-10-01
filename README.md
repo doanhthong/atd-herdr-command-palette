@@ -68,6 +68,10 @@ so you never have to hand-edit `config.json`:
   directory if needed).
 - **Remove space from config…**: pick one of the current presets to delete
   from `config.json`.
+- **Add command to space…**: pick a space from the config, then enter a
+  command (e.g. `pnpm dev -p 3001`) and an optional label; appends it to that
+  space's `commands` list.
+- **Remove command from space…**: pick one of the configured commands to delete.
 - **Open config.json**: opens a new tab in the current space and runs
   `$EDITOR config.json` (falls back to `vi`, or `notepad` on Windows), for edits the two commands above
   don't cover (reordering, fixing a typo after a parse error, etc).
@@ -92,6 +96,35 @@ The top of the palette has a **Quick Actions** group:
   counts as the new tab.
 - **New tab**: same as above, but just a shell.
 - **New space**: `workspace.create {focus: true}`, no picker.
+
+### Space commands
+
+A space in `config.json` can list quick commands:
+
+```json
+{
+  "spaces": [
+    {
+      "label": "web",
+      "path": "~/git-projects/web",
+      "commands": [
+        { "label": "Dev server", "command": "pnpm dev -p 3001" },
+        { "command": "pnpm test --watch" }
+      ]
+    }
+  ]
+}
+```
+
+Each command shows up as a row under **Space Commands**, but only for the
+space you're in: the palette looks at the focused pane's working directory and
+shows the commands of the config space whose `path` contains it (the deepest
+match if spaces nest). If Herdr doesn't report a directory, all commands are
+listed. **Remove command from space…** always lists every command. Selecting a row opens a
+new tab in that space (the open space with the same label, or a new space at
+its path if none is open), names the tab after `label` (defaults to the
+command), and runs the command there. Manage them with **Add command to
+space…** / **Remove command from space…** in **Space Config**.
 
 ### Custom agent tabs
 

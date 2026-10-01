@@ -224,9 +224,10 @@ function methodIcon(method) {
 function itemIcon(item) {
   if (item.__kind === "quick") return green("+"); // new tab / new <agent> tab / new space
   if (item.__kind === "preset") return green("+"); // creates a new workspace
+  if (item.__kind === "space_command") return green("+"); // creates a new tab
   if (item.__kind === "space_config") {
-    if (item.action === "add") return green("+");
-    if (item.action === "remove") return red("−");
+    if (item.action === "add" || item.action === "add_command") return green("+");
+    if (item.action === "remove" || item.action === "remove_command") return red("−");
     if (item.action === "open") return "✎";
     if (item.action === "copy") return "⧉";
   }
@@ -660,7 +661,10 @@ function loadSpacePresets() {
     .map((s) => {
       const dir = expandHome(s.path);
       const label = s.label || path.basename(dir);
-      return { __kind: "preset", label, path: dir, text: `${label}  ·  ${s.path}`, display: `${iconSlot(green("+"))}${label}  ${dim(s.path)}` };
+      const commands = (Array.isArray(s.commands) ? s.commands : [])
+        .filter((c) => c && typeof c.command === "string" && c.command.trim())
+        .map((c) => ({ command: c.command.trim(), label: String(c.label || c.command.trim()) }));
+      return { __kind: "preset", label, path: dir, commands, text: `${label}  ·  ${s.path}`, display: `${iconSlot(green("+"))}${label}  ${dim(s.path)}` };
     });
 }
 
@@ -677,6 +681,47 @@ function writeSpacesConfig(data, spaces) {
   return writeConfig({ ...data, spaces });
 }
 
+// One "<command label> · <space label>" row per quick command configured on a
+// space in config.json. Selecting it opens a new tab in that space (the open
+// workspace with the same label, else a new workspace at its path) and runs
+// the command there.
+function buildSpaceCommandItems(presetItems) {
+  const items = [];
+  for (const space of presetItems) {
+    if (space.__kind !== "preset") continue;
+    for (const c of space.commands) {
+      items.push({
+        __kind: "space_command",
+        space,
+        label: c.label,
+        command: c.command,
+        text: `${c.label}  ·  ${space.label}  ·  ${c.command}`, // searched; the row shows `display`
+        display: `${iconSlot(green("+"))}${c.label}  ${dim(`${space.label} · ${c.command}`)}`,
+      });
+    }
+  }
+  return items;
+}
+
+// Working directory of the pane the palette was opened from, or null when
+// Herdr doesn't report one.
+async function currentPaneCwd(context) {
+  const outcome = await safeCallMethod("pane.list", {});
+  if (outcome.error) return null;
+  const pane = ((outcome.result && outcome.result.panes) || []).find((p) => p.pane_id === context.pane_id);
+  return pane && typeof pane.cwd === "string" && pane.cwd ? pane.cwd : null;
+}
+
+// True when `cwd` is `dir` itself or somewhere inside it.
+function isWithin(cwd, dir) {
+  const norm = (p) => {
+    const r = path.resolve(p);
+    return IS_WINDOWS ? r.toLowerCase() : r;
+  };
+  const rel = path.relative(norm(dir), norm(cwd));
+  return rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
+}
+
 function shellQuote(s) {
   if (IS_WINDOWS) return `"${s.replace(/"/g, '""')}"`;
   return `'${s.replace(/'/g, `'\\''`)}'`;
@@ -687,6 +732,8 @@ function shellQuote(s) {
 const SPACE_CONFIG_ACTIONS = [
   { __kind: "space_config", action: "add", text: "Add space to config…" },
   { __kind: "space_config", action: "remove", text: "Remove space from config…" },
+  { __kind: "space_config", action: "add_command", text: "Add command to space…" },
+  { __kind: "space_config", action: "remove_command", text: "Remove command from space…" },
   { __kind: "space_config", action: "open", text: "Open config.json" },
   { __kind: "space_config", action: "copy", text: "Copy config.json path" },
 ];
@@ -745,7 +792,7 @@ function buildQuickActions() {
 // preset — focuses it, and optionally runs a command (e.g. `claude`) in it. A preset has no
 // workspace yet, so the new workspace's own first tab serves as "the new tab"
 // rather than stacking a second one on top. Returns an error message or null.
-async function openTabIn(target, { command }, context) {
+async function openTabIn(target, { command, tabLabel }, context) {
   let outcome;
   if (target.__kind === "preset") {
     if (!fs.existsSync(target.path)) return `Path does not exist: ${target.path}`;
@@ -761,6 +808,8 @@ async function openTabIn(target, { command }, context) {
   if (command) {
     const pane = outcome.result && outcome.result.root_pane;
     if (!pane) return "Herdr did not return the new tab's pane";
+    const tabId = (outcome.result.tab && outcome.result.tab.tab_id) || pane.tab_id;
+    if (tabLabel && tabId) await safeCallMethod("tab.rename", { tab_id: tabId, label: tabLabel }); // cosmetic, best-effort
     const sent = await safeCallMethod("pane.send_input", { pane_id: pane.pane_id, text: command, keys: ["Enter"] });
     if (sent.error) return sent.error.message;
   }
@@ -804,12 +853,25 @@ async function main() {
   process.stdout.write("\x1b[2J\x1b[H\x1b[2mLoading…\x1b[0m");
   const { agentItems, workspaceItems } = await loadQuickJumpItems(context);
   const presetItems = loadSpacePresets();
-  const topItems = [...buildQuickActions(), ...agentItems, ...workspaceItems, ...presetItems, ...SPACE_CONFIG_ACTIONS, ...supported];
+  const spaceCommandItems = buildSpaceCommandItems(presetItems);
+  // Only offer commands for the space the palette was opened in: the one whose
+  // path contains the focused pane's cwd (the deepest match wins when spaces
+  // nest). If the cwd is unknown, offer them all rather than none.
+  const cwd = await currentPaneCwd(context);
+  let visibleSpaceCommandItems = spaceCommandItems;
+  if (cwd) {
+    const owner = presetItems
+      .filter((p) => p.__kind === "preset" && isWithin(cwd, p.path))
+      .sort((a, b) => path.resolve(b.path).length - path.resolve(a.path).length)[0];
+    visibleSpaceCommandItems = spaceCommandItems.filter((i) => i.space === owner);
+  }
+  const topItems = [...buildQuickActions(), ...agentItems, ...workspaceItems, ...visibleSpaceCommandItems, ...presetItems, ...SPACE_CONFIG_ACTIONS, ...supported];
   const isQuickItem = (item) => item.__kind != null;
   const groupFor = (item) => {
     if (item.__kind === "quick") return "Quick Actions";
     if (item.__kind === "agent") return "Agents";
     if (item.__kind === "workspace") return "Spaces";
+    if (item.__kind === "space_command") return "Space Commands";
     if (item.__kind === "preset" || item.__kind === "preset_error") return "New Space";
     if (item.__kind === "space_config") return "Space Config";
     return humanParamName(item.category);
@@ -856,6 +918,13 @@ async function main() {
       if (picked.result === "cancel") continue;
       const error = await openTabIn(picked.item, action, context);
       if (error) await showMessage(`${action.text} failed`, error);
+      break;
+    }
+
+    if (action.__kind === "space_command") {
+      const open = workspaceItems.find((w) => w.text === action.space.label);
+      const error = await openTabIn(open || action.space, { command: action.command, tabLabel: action.label }, context);
+      if (error) await showMessage(`${action.label} failed`, error);
       break;
     }
 
@@ -932,6 +1001,74 @@ async function main() {
           }
         } catch (err) {
           await showMessage("Failed to remove space", err.message);
+        }
+        break;
+      }
+
+      if (action.action === "add_command") {
+        const spaces = presetItems.filter((p) => p.__kind === "preset");
+        if (spaces.length === 0) {
+          await showMessage("Add command to space", "No spaces in config.json yet — use Add space to config… first.");
+          continue;
+        }
+        const picked = await pickFromList({
+          items: spaces,
+          getText: (it) => it.text,
+          getDisplay: (it) => it.display,
+          title: "Add command to space → Space",
+        });
+        if (picked.result === "cancel") continue;
+        const cmdInput = await promptText({ title: `Add command to ${picked.item.label} → Command`, help: "e.g. pnpm dev -p 3001 · Enter confirm · Esc cancel" });
+        if (cmdInput.result === "cancel") continue;
+        const cmdValue = cmdInput.value.trim();
+        if (!cmdValue) continue;
+        const labelInput = await promptText({ title: "Add command to space → Label (optional)", help: "Enter confirm · Esc cancel" });
+        if (labelInput.result === "cancel") continue;
+        const labelValue = labelInput.value.trim();
+        try {
+          const { data, spaces: cfg } = readSpacesConfig();
+          const entry = cfg.find((s) => s && typeof s.path === "string" && expandHome(s.path) === picked.item.path);
+          if (!entry) {
+            await showMessage("Add command to space", "That space no longer matches config.json — it may have changed on disk.");
+            break;
+          }
+          if (!Array.isArray(entry.commands)) entry.commands = [];
+          entry.commands.push(labelValue ? { label: labelValue, command: cmdValue } : { command: cmdValue });
+          const file = writeSpacesConfig(data, cfg);
+          await showMessage("Command added", `${cmdValue}  →  ${picked.item.label}\n\nSaved to ${file}.\nReopen the palette to see it under Space Commands.`);
+        } catch (err) {
+          await showMessage("Failed to add command", err.message);
+        }
+        break;
+      }
+
+      if (action.action === "remove_command") {
+        if (spaceCommandItems.length === 0) {
+          await showMessage("Remove command from space", "No space commands are configured.");
+          continue;
+        }
+        const picked = await pickFromList({
+          items: spaceCommandItems,
+          getText: (it) => it.text,
+          getDisplay: (it) => `${iconSlot(red("−"))}${it.label}  ${dim(`${it.space.label} · ${it.command}`)}`,
+          title: "Remove command from space",
+          help: "Enter remove · Esc cancel",
+        });
+        if (picked.result === "cancel") continue;
+        try {
+          const { data, spaces: cfg } = readSpacesConfig();
+          const entry = cfg.find((s) => s && typeof s.path === "string" && expandHome(s.path) === picked.item.space.path);
+          const idx = entry && Array.isArray(entry.commands) ? entry.commands.findIndex((c) => c && typeof c.command === "string" && c.command.trim() === picked.item.command) : -1;
+          if (idx === -1) {
+            await showMessage("Remove command from space", "That command no longer matches config.json — it may have changed on disk.");
+          } else {
+            entry.commands.splice(idx, 1);
+            if (entry.commands.length === 0) delete entry.commands;
+            const file = writeSpacesConfig(data, cfg);
+            await showMessage("Command removed", `${picked.item.command}\n\nSaved to ${file}.\nReopen the palette to refresh the list.`);
+          }
+        } catch (err) {
+          await showMessage("Failed to remove command", err.message);
         }
         break;
       }
