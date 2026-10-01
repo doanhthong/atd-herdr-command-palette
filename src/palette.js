@@ -222,7 +222,7 @@ function methodIcon(method) {
 // commands, presets) — these know exactly what they do, so the icon is
 // hard-coded rather than inferred.
 function itemIcon(item) {
-  if (item.__kind === "quick") return green("+"); // new tab / new Claude tab / new space
+  if (item.__kind === "quick") return green("+"); // new tab / new <agent> tab / new space
   if (item.__kind === "preset") return green("+"); // creates a new workspace
   if (item.__kind === "space_config") {
     if (item.action === "add") return green("+");
@@ -609,21 +609,51 @@ function expandHome(p) {
   return p;
 }
 
-function loadSpacePresets() {
-  const file = path.join(configDir(), "spaces.json");
-  let raw;
-  try {
-    raw = fs.readFileSync(file, "utf8");
-  } catch {
-    return []; // no config file: feature simply stays hidden
+// Single config file: `{ "spaces": [...], "tabs": [...] }`. Falls back to the
+// legacy spaces.json (spaces only) when config.json doesn't exist yet; the
+// first write goes to config.json and carries the legacy content over.
+function configPath() {
+  return path.join(configDir(), "config.json");
+}
+
+function readConfigRaw() {
+  const file = configPath();
+  for (const f of [file, path.join(configDir(), "spaces.json")]) {
+    try {
+      return { file, raw: fs.readFileSync(f, "utf8") };
+    } catch (err) {
+      if (err.code !== "ENOENT") throw err;
+    }
   }
+  return { file, raw: null };
+}
+
+// Throws on unreadable/unparseable content. A missing file reads as `{}`.
+function readConfig() {
+  const { file, raw } = readConfigRaw();
+  if (raw === null) return { file, data: {} };
+  const data = JSON.parse(raw);
+  if (!data || typeof data !== "object" || Array.isArray(data)) throw new Error("expected a top-level JSON object");
+  return { file, data };
+}
+
+function writeConfig(data) {
+  const file = configPath();
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  fs.writeFileSync(file, JSON.stringify(data, null, 2) + "\n", "utf8");
+  return file;
+}
+
+function loadSpacePresets() {
+  const file = configPath();
   let spaces;
   try {
-    const parsed = JSON.parse(raw);
-    spaces = parsed && parsed.spaces;
-    if (!Array.isArray(spaces)) throw new Error('expected a top-level "spaces" array');
+    const { data } = readConfig();
+    if (data.spaces === undefined) return []; // nothing configured: feature simply stays hidden
+    spaces = data.spaces;
+    if (!Array.isArray(spaces)) throw new Error('expected "spaces" to be an array');
   } catch (err) {
-    return [{ __kind: "preset_error", file, message: err.message, text: "spaces.json is invalid — select for details" }];
+    return [{ __kind: "preset_error", file, message: err.message, text: "config.json is invalid — select for details" }];
   }
   return spaces
     .filter((s) => s && typeof s.path === "string" && s.path)
@@ -634,32 +664,17 @@ function loadSpacePresets() {
     });
 }
 
-function spacesConfigPath() {
-  return path.join(configDir(), "spaces.json");
-}
-
-// Reads spaces.json for editing (as opposed to `loadSpacePresets`, which
-// reads it for display and swallows errors into a row). A missing file reads
-// as an empty list — the file is only created once something is added.
+// Reads the spaces list for editing (as opposed to `loadSpacePresets`, which
+// reads it for display and swallows errors into a row). Returns the whole
+// config so writes preserve other keys such as `tabs`.
 function readSpacesConfig() {
-  const file = spacesConfigPath();
-  let raw;
-  try {
-    raw = fs.readFileSync(file, "utf8");
-  } catch (err) {
-    if (err.code === "ENOENT") return { file, spaces: [] };
-    throw err;
-  }
-  const parsed = JSON.parse(raw);
-  if (!Array.isArray(parsed.spaces)) throw new Error('expected a top-level "spaces" array');
-  return { file, spaces: parsed.spaces };
+  const { data } = readConfig();
+  if (data.spaces !== undefined && !Array.isArray(data.spaces)) throw new Error('expected "spaces" to be an array');
+  return { data, spaces: data.spaces || [] };
 }
 
-function writeSpacesConfig(spaces) {
-  const file = spacesConfigPath();
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, JSON.stringify({ spaces }, null, 2) + "\n", "utf8");
-  return file;
+function writeSpacesConfig(data, spaces) {
+  return writeConfig({ ...data, spaces });
 }
 
 function shellQuote(s) {
@@ -667,13 +682,13 @@ function shellQuote(s) {
   return `'${s.replace(/'/g, `'\\''`)}'`;
 }
 
-// Commands that manage spaces.json itself, shown alongside the presets it
+// Commands that manage config.json itself, shown alongside the presets it
 // produces so "add a space" and "use a space" live in the same group.
 const SPACE_CONFIG_ACTIONS = [
   { __kind: "space_config", action: "add", text: "Add space to config…" },
   { __kind: "space_config", action: "remove", text: "Remove space from config…" },
-  { __kind: "space_config", action: "open", text: "Open spaces.json" },
-  { __kind: "space_config", action: "copy", text: "Copy spaces.json path" },
+  { __kind: "space_config", action: "open", text: "Open config.json" },
+  { __kind: "space_config", action: "copy", text: "Copy config.json path" },
 ];
 
 async function showMessage(title, body) {
@@ -702,17 +717,35 @@ async function showResult(action, params, outcome) {
 
 // ---- quick actions ----------------------------------------------------------
 
-const QUICK_ACTIONS = [
-  { __kind: "quick", quick: "claude_tab", text: "New Claude tab", runClaude: true },
-  { __kind: "quick", quick: "tab", text: "New tab", runClaude: false },
-  { __kind: "quick", quick: "space", text: "New space" },
-];
+const DEFAULT_TAB_COMMANDS = [{ label: "Claude", command: "claude" }];
 
-// Opens a fresh tab in `target` — an open workspace row or a spaces.json
-// preset — focuses it, and optionally starts `claude` in it. A preset has no
+// Reads the "tabs" list from config.json: `{ "tabs": [{ "label": "Codex",
+// "command": "codex" }] }`. Each entry becomes a "New <label> tab" quick
+// action that runs `command` in the new tab. A missing, unparseable, or empty
+// file falls back to the default (Claude), so the palette always works.
+function loadTabCommands() {
+  try {
+    const tabs = (readConfig().data.tabs || [])
+      .filter((t) => t && typeof t.command === "string" && t.command.trim())
+      .map((t) => ({ label: String(t.label || t.command.trim().split(/\s+/)[0]), command: t.command.trim() }));
+    if (tabs.length > 0) return tabs;
+  } catch {}
+  return DEFAULT_TAB_COMMANDS;
+}
+
+function buildQuickActions() {
+  return [
+    ...loadTabCommands().map((t) => ({ __kind: "quick", quick: "command_tab", text: `New ${t.label} tab`, command: t.command })),
+    { __kind: "quick", quick: "tab", text: "New tab", command: null },
+    { __kind: "quick", quick: "space", text: "New space" },
+  ];
+}
+
+// Opens a fresh tab in `target` — an open workspace row or a config.json
+// preset — focuses it, and optionally runs a command (e.g. `claude`) in it. A preset has no
 // workspace yet, so the new workspace's own first tab serves as "the new tab"
 // rather than stacking a second one on top. Returns an error message or null.
-async function openTabIn(target, { runClaude }, context) {
+async function openTabIn(target, { command }, context) {
   let outcome;
   if (target.__kind === "preset") {
     if (!fs.existsSync(target.path)) return `Path does not exist: ${target.path}`;
@@ -725,10 +758,10 @@ async function openTabIn(target, { runClaude }, context) {
     }
   }
   if (outcome.error) return outcome.error.message;
-  if (runClaude) {
+  if (command) {
     const pane = outcome.result && outcome.result.root_pane;
     if (!pane) return "Herdr did not return the new tab's pane";
-    const sent = await safeCallMethod("pane.send_input", { pane_id: pane.pane_id, text: "claude", keys: ["Enter"] });
+    const sent = await safeCallMethod("pane.send_input", { pane_id: pane.pane_id, text: command, keys: ["Enter"] });
     if (sent.error) return sent.error.message;
   }
   return null;
@@ -771,7 +804,7 @@ async function main() {
   process.stdout.write("\x1b[2J\x1b[H\x1b[2mLoading…\x1b[0m");
   const { agentItems, workspaceItems } = await loadQuickJumpItems(context);
   const presetItems = loadSpacePresets();
-  const topItems = [...QUICK_ACTIONS, ...agentItems, ...workspaceItems, ...presetItems, ...SPACE_CONFIG_ACTIONS, ...supported];
+  const topItems = [...buildQuickActions(), ...agentItems, ...workspaceItems, ...presetItems, ...SPACE_CONFIG_ACTIONS, ...supported];
   const isQuickItem = (item) => item.__kind != null;
   const groupFor = (item) => {
     if (item.__kind === "quick") return "Quick Actions";
@@ -839,7 +872,7 @@ async function main() {
     }
 
     if (action.__kind === "preset_error") {
-      await showMessage("Invalid spaces.json", `${action.file}\n\n${action.message}`);
+      await showMessage("Invalid config.json", `${action.file}\n\n${action.message}`);
       continue;
     }
 
@@ -863,9 +896,9 @@ async function main() {
         if (labelInput.result === "cancel") continue;
         const labelValue = labelInput.value.trim();
         try {
-          const { spaces } = readSpacesConfig();
+          const { data, spaces } = readSpacesConfig();
           spaces.push(labelValue ? { path: pathValue, label: labelValue } : { path: pathValue });
-          const file = writeSpacesConfig(spaces);
+          const file = writeSpacesConfig(data, spaces);
           await showMessage("Space added", `${pathValue}\n\nSaved to ${file}.\nReopen the palette to see it under New Space.`);
         } catch (err) {
           await showMessage("Failed to add space", err.message);
@@ -876,7 +909,7 @@ async function main() {
       if (action.action === "remove") {
         const removable = presetItems.filter((p) => p.__kind === "preset");
         if (removable.length === 0) {
-          await showMessage("Remove space from config", "spaces.json has no entries to remove.");
+          await showMessage("Remove space from config", "config.json has no spaces to remove to remove.");
           continue;
         }
         const picked = await pickFromList({
@@ -888,13 +921,13 @@ async function main() {
         });
         if (picked.result === "cancel") continue;
         try {
-          const { spaces } = readSpacesConfig();
+          const { data, spaces } = readSpacesConfig();
           const idx = spaces.findIndex((s) => expandHome(s.path) === picked.item.path);
           if (idx === -1) {
-            await showMessage("Remove space from config", "That entry no longer matches spaces.json — it may have changed on disk.");
+            await showMessage("Remove space from config", "That entry no longer matches config.json — it may have changed on disk.");
           } else {
             spaces.splice(idx, 1);
-            const file = writeSpacesConfig(spaces);
+            const file = writeSpacesConfig(data, spaces);
             await showMessage("Space removed", `${picked.item.label}\n\nSaved to ${file}.\nReopen the palette to refresh the list.`);
           }
         } catch (err) {
@@ -904,31 +937,31 @@ async function main() {
       }
 
       if (action.action === "open") {
-        const file = spacesConfigPath();
+        const file = configPath();
         try {
           fs.mkdirSync(path.dirname(file), { recursive: true });
-          if (!fs.existsSync(file)) writeSpacesConfig([]);
+          if (!fs.existsSync(file)) writeConfig(readConfig().data);
         } catch (err) {
-          await showMessage("Failed to open spaces.json", err.message);
+          await showMessage("Failed to open config.json", err.message);
           break;
         }
         const outcome = await safeCallMethod("tab.create", { workspace_id: context.workspace_id, focus: true });
         const pane = outcome.result && outcome.result.root_pane;
         if (outcome.error || !pane) {
-          await showMessage("Failed to open spaces.json", outcome.error ? outcome.error.message : "Herdr did not return the new tab's pane");
+          await showMessage("Failed to open config.json", outcome.error ? outcome.error.message : "Herdr did not return the new tab's pane");
           break;
         }
         const editor = process.env.EDITOR || (IS_WINDOWS ? "notepad" : "vi");
         const sent = await safeCallMethod("pane.send_input", { pane_id: pane.pane_id, text: `${editor} ${shellQuote(file)}`, keys: ["Enter"] });
-        if (sent.error) await showMessage("Failed to open spaces.json", sent.error.message);
+        if (sent.error) await showMessage("Failed to open config.json", sent.error.message);
         break;
       }
 
       if (action.action === "copy") {
-        const file = spacesConfigPath();
+        const file = configPath();
         try {
           execFileSync(IS_WINDOWS ? "clip" : "pbcopy", [], { input: file });
-          await showMessage("Copied", `spaces.json path copied to clipboard:\n\n${file}`);
+          await showMessage("Copied", `config.json path copied to clipboard:\n\n${file}`);
         } catch (err) {
           await showMessage("Failed to copy path", err.message);
         }

@@ -27,10 +27,18 @@ Then press `prefix+p` inside Herdr, or run:
 herdr plugin action invoke atd.command-palette.open
 ```
 
+## Configuration
+
+All user settings live in one file, `config.json`, in the plugin's config dir
+(`herdr plugin config-dir atd.command-palette`), with a `spaces` list and a
+`tabs` list (both optional). An older `spaces.json` is still read when
+`config.json` doesn't exist; the first edit through the palette writes
+`config.json` (carrying the old spaces over) and leaves `spaces.json` alone.
+
 ## Predefined spaces
 
 List the spaces you open often in
-`~/.config/herdr/plugins/config/atd.command-palette/spaces.json` (the dir
+`~/.config/herdr/plugins/config/atd.command-palette/config.json` (the dir
 `herdr plugin config-dir atd.command-palette` prints):
 
 ```json
@@ -47,23 +55,23 @@ They show up under a **New Space** header in the palette. Picking one calls
 path, focused right away (it always creates a new one, even if a workspace
 with that label is already open). `label` is optional (defaults to the path's
 last folder name); `path` may start with `~`. A missing file just hides the
-section; an unparseable one shows a single "spaces.json is invalid" row that
+section; an unparseable one shows a single "config.json is invalid" row that
 explains the error when selected; a path that doesn't exist is reported
 instead of being sent to Herdr. The file is read fresh on every palette open,
 so edits need no restart.
 
 A separate **Space Config** group has commands for managing the file itself,
-so you never have to hand-edit `spaces.json`:
+so you never have to hand-edit `config.json`:
 
 - **Add space to config…**: prompts for a path, then an optional label, and
-  appends `{ path, label? }` to `spaces.json` (creating the file and its
+  appends `{ path, label? }` to `config.json` (creating the file and its
   directory if needed).
 - **Remove space from config…**: pick one of the current presets to delete
-  from `spaces.json`.
-- **Open spaces.json**: opens a new tab in the current space and runs
-  `$EDITOR spaces.json` (falls back to `vi`, or `notepad` on Windows), for edits the two commands above
+  from `config.json`.
+- **Open config.json**: opens a new tab in the current space and runs
+  `$EDITOR config.json` (falls back to `vi`, or `notepad` on Windows), for edits the two commands above
   don't cover (reordering, fixing a typo after a parse error, etc).
-- **Copy spaces.json path**: copies the file's absolute path to the clipboard
+- **Copy config.json path**: copies the file's absolute path to the clipboard
   via `pbcopy` (`clip` on Windows).
 
 Add/remove write the file and show a confirmation, but — like the rest of the
@@ -74,15 +82,37 @@ change reflected.
 
 The top of the palette has a **Quick Actions** group:
 
-- **New Claude tab**: pick a space (open spaces first, then the
-  `spaces.json` ones under **From config**). A new tab opens there, gets focus,
-  and runs `claude` (`pane.send_input` with `claude` + Enter). For an open
+- **New Claude tab** (configurable, see below): pick a space (open spaces
+  first, then the `config.json` ones under **From config**). A new tab opens
+  there, gets focus, and runs the configured command (`pane.send_input` with
+  the command + Enter; `claude` by default). For an open
   space this is `tab.create {workspace_id, focus: true}`, plus a
   `workspace.focus` if that space isn't the current one. For a config space it's
   `workspace.create {cwd, label, focus: true}`, and the new space's first tab
   counts as the new tab.
 - **New tab**: same as above, but just a shell.
 - **New space**: `workspace.create {focus: true}`, no picker.
+
+### Custom agent tabs
+
+Define your own "New … tab" actions under a `tabs` key in the same `config.json`:
+
+```json
+{
+  "spaces": [],
+  "tabs": [
+    { "label": "Claude", "command": "claude" },
+    { "label": "Codex", "command": "codex" },
+    { "label": "Pi", "command": "pi" }
+  ]
+}
+```
+
+Each entry adds a **New `<label>` tab** row that runs `command` in the new
+tab. `label` is optional (defaults to the command's first word). If there is no
+`tabs` key (or it is invalid or empty), the palette falls back to a single
+**New Claude tab** (`claude`); once you configure it, only your entries are
+shown, so include Claude if you still want it. Read fresh on every open.
 
 Rows are styled for scanning: a green `●` marks the current agent, space, or
 id, agent tab names are bold, and preset paths and command method names are
@@ -91,7 +121,7 @@ inverse-video highlight on the selected row survives them. `truncate` counts
 only the visible characters.
 
 Rows also get an icon showing what selecting them does: a green `+` for
-anything that creates something (Quick Actions, `spaces.json` presets, **Add
+anything that creates something (Quick Actions, `config.json` presets, **Add
 space to config…**), a red `−` for anything destructive (**Remove space from
 config…**, and the same destructive registry actions listed above), and `→`
 for anything that switches focus. For the 100+ generated registry actions
@@ -100,7 +130,7 @@ this is inferred from the method name's last `.`-segment (`methodIcon` —
 `*.delete` → `−`, anything with `focus` or `*.activate` → `→`); actions that
 don't fit any of those (e.g. `pane.split`, `pane.read`) get no icon. The two
 remaining **Space Config** commands get their own fixed icons: `✎` for **Open
-spaces.json**, `⧉` for **Copy spaces.json path**.
+config.json**, `⧉` for **Copy config.json path**.
 
 ## File layout
 
@@ -187,7 +217,7 @@ process exits (which closes the popup). Everything lives in this one file:
      current agent marked with a green `●` and sorted first), then all open
      workspaces (from that same `workspace.list` call, one row per workspace,
      current workspace marked with `●` and sorted first), then the
-     predefined spaces from `spaces.json` (`loadSpacePresets`, see
+     predefined spaces from `config.json` (`loadSpacePresets`, see
      **Predefined spaces**), then all actions
      where `!hasUnsupportedRequiredParams`. The list is
      rendered with non-selectable group headers (`pickFromList`'s `getGroup`
@@ -244,8 +274,8 @@ process exits (which closes the popup). Everything lives in this one file:
   On Windows, `HERDR_SOCKET_PATH` points at a marker file, not a Unix socket
   (connecting to it gives `ENOTSOCK`); the real endpoint is the named pipe
   `\\.\pipe\<HERDR_SOCKET_PATH>`, which `callMethod` dials. Other platform differences: the config
-  dir falls back to `%APPDATA%\herdr\...`, "Copy spaces.json path" uses `clip`
-  instead of `pbcopy`, and "Open spaces.json" falls back to `notepad` and
+  dir falls back to `%APPDATA%\herdr\...`, "Copy config.json path" uses `clip`
+  instead of `pbcopy`, and "Open config.json" falls back to `notepad` and
   double-quotes the path.
 - **No automated regression suite**, just `scripts/smoke-test.py` (manual,
   see below). It checks a handful of representative paths, not all 89
