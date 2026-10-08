@@ -1,112 +1,90 @@
 # Herdr Command Palette
 
-A fuzzy-searchable command palette for [Herdr](https://herdr.dev), covering
-every method Herdr's socket API exposes (100+ actions, generated straight from
-`herdr api schema --json` — not hand-maintained).
+**Every Herdr action, one keystroke away. Built for working with coding agents.**
 
-Bind a key, type to filter, pick an action. If it needs a target (a pane,
-workspace, tab, agent...) or a value with a fixed set of options, the palette
-prompts for those next, pre-filling the currently focused pane/workspace/tab
-when applicable. Destructive actions (`server.stop`, `pane.close`,
-`tab.close`, `workspace.close`, `worktree.remove`, `plugin.unlink`,
-`plugin.disable`) require an extra confirmation step.
+Press `prefix+p`, type a few letters, hit Enter. Jump to any running agent,
+spin up a new Claude (or Codex, or Pi) tab in any project, launch your dev
+server, or run any of Herdr's 100+ actions without remembering a single
+command.
 
-Personal-use plugin, not published to the marketplace. Built and verified
-2026-09-25 against Herdr v0.9.0 (protocol 22) on macOS; Windows support added 2026-09-29 (Herdr 0.9.0, Windows 11).
+<!-- TODO: demo video -->
+> 🎬 **Demo video coming soon.**
+
+## Why you'll like it
+
+- **One palette for everything.** Every action Herdr supports (panes, tabs,
+  workspaces, agents, worktrees, plugins, and more) is in one fuzzy-searchable
+  list.
+- **Made for agent workflows.** Your running agents are at the top of the
+  list, so you can jump straight to the one that needs you. Start a fresh agent
+  tab in any project in two keystrokes.
+- **Your projects, ready to go.** Save the folders you work in and open any of
+  them as a new space instantly.
+- **Per-project commands.** Attach commands like `pnpm dev` or
+  `pnpm test --watch` to a project. They show up only when you're working in
+  that project.
+- **Smart prompts.** If an action needs a target, the palette asks for it and
+  puts your current pane, tab, or space first.
+- **Safe by default.** Closing, removing, or stopping anything asks you to
+  confirm first.
+- **Configure it from the palette.** Add projects and commands without
+  opening a config file.
 
 ## Install
 
-```bash
-herdr plugin link ~/git-projects/herdr-command-palette
-herdr server stop   # pick up the new plugin/keybinding
-```
-
-Then press `prefix+p` inside Herdr, or run:
+Requires Herdr 0.9.0+, Node.js, and macOS or Windows.
 
 ```bash
-herdr plugin action invoke atd.command-palette.open
+herdr plugin install doanhthong/atd-herdr-command-palette
+herdr server stop   # restart Herdr to load the plugin and its keybinding
 ```
 
-## Configuration
+Then press **`prefix+p`** inside Herdr.
 
-All user settings live in one file, `config.json`, in the plugin's config dir
-(`herdr plugin config-dir atd.command-palette`), with a `spaces` list and a
-`tabs` list (both optional). An older `spaces.json` is still read when
-`config.json` doesn't exist; the first edit through the palette writes
-`config.json` (carrying the old spaces over) and leaves `spaces.json` alone.
+## What's in the palette
 
-## Predefined spaces
+| Section | What it does |
+| --- | --- |
+| **Quick Actions** | New agent tab, new tab, new space |
+| **Agents** | Every running agent, with the current one first. Select to jump to it |
+| **Spaces** | Your open spaces. Select to switch |
+| **New Space** | Your saved projects. Select to open one as a new space |
+| **Space Commands** | Commands saved for the project you're in |
+| **Space Config** | Add or remove projects and commands, or open the config file |
+| **Everything else** | All of Herdr's actions, grouped by Agent, Pane, Tab, Workspace… |
 
-List the spaces you open often in
-`~/.config/herdr/plugins/config/atd.command-palette/config.json` (the dir
-`herdr plugin config-dir atd.command-palette` prints):
+Icons tell you what a row does: `+` creates, `−` closes or removes, `→`
+switches to something.
+
+## Make it yours
+
+All settings live in one `config.json`. Run
+`herdr plugin config-dir atd.command-palette` to find it, or just use
+**Space Config → Open config.json** from the palette. Changes apply the next
+time you open the palette.
+
+### Jump to your projects
 
 ```json
 {
   "spaces": [
-    { "label": "herdr palette", "path": "~/git-projects/herdr-command-palette" },
-    { "path": "~/git-projects/holistics" }
+    { "label": "my app", "path": "~/code/my-app" },
+    { "path": "~/code/api" }
   ]
 }
 ```
 
-They show up under a **New Space** header in the palette. Picking one calls
-`workspace.create {cwd, label, focus: true}`: a brand-new workspace at that
-path, focused right away (it always creates a new one, even if a workspace
-with that label is already open). `label` is optional (defaults to the path's
-last folder name); `path` may start with `~`. A missing file just hides the
-section; an unparseable one shows a single "config.json is invalid" row that
-explains the error when selected; a path that doesn't exist is reported
-instead of being sent to Herdr. The file is read fresh on every palette open,
-so edits need no restart.
+These appear under **New Space**. You can also add them from the palette with
+**Add space to config…**.
 
-A separate **Space Config** group has commands for managing the file itself,
-so you never have to hand-edit `config.json`:
-
-- **Add space to config…**: prompts for a path, then an optional label, and
-  appends `{ path, label? }` to `config.json` (creating the file and its
-  directory if needed).
-- **Remove space from config…**: pick one of the current presets to delete
-  from `config.json`.
-- **Add command to space…**: pick a space from the config, then enter a
-  command (e.g. `pnpm dev -p 3001`) and an optional label; appends it to that
-  space's `commands` list.
-- **Remove command from space…**: pick one of the configured commands to delete.
-- **Open config.json**: opens a new tab in the current space and runs
-  `$EDITOR config.json` (falls back to `vi`, or `notepad` on Windows), for edits the two commands above
-  don't cover (reordering, fixing a typo after a parse error, etc).
-- **Copy config.json path**: copies the file's absolute path to the clipboard
-  via `pbcopy` (`clip` on Windows).
-
-Add/remove write the file and show a confirmation, but — like the rest of the
-palette — don't refresh the in-memory list, so reopen the palette to see the
-change reflected.
-
-## Quick actions
-
-The top of the palette has a **Quick Actions** group:
-
-- **New Claude tab** (configurable, see below): pick a space (open spaces
-  first, then the `config.json` ones under **From config**). A new tab opens
-  there, gets focus, and runs the configured command (`pane.send_input` with
-  the command + Enter; `claude` by default). For an open
-  space this is `tab.create {workspace_id, focus: true}`, plus a
-  `workspace.focus` if that space isn't the current one. For a config space it's
-  `workspace.create {cwd, label, focus: true}`, and the new space's first tab
-  counts as the new tab.
-- **New tab**: same as above, but just a shell.
-- **New space**: `workspace.create {focus: true}`, no picker.
-
-### Space commands
-
-A space in `config.json` can list quick commands:
+### Per-project commands
 
 ```json
 {
   "spaces": [
     {
       "label": "web",
-      "path": "~/git-projects/web",
+      "path": "~/code/web",
       "commands": [
         { "label": "Dev server", "command": "pnpm dev -p 3001" },
         { "command": "pnpm test --watch" }
@@ -116,23 +94,16 @@ A space in `config.json` can list quick commands:
 }
 ```
 
-Each command shows up as a row under **Space Commands**, but only for the
-space you're in: the palette looks at the focused pane's working directory and
-shows the commands of the config space whose `path` contains it (the deepest
-match if spaces nest). If Herdr doesn't report a directory, all commands are
-listed. **Remove command from space…** always lists every command. Selecting a row opens a
-new tab in that space (the open space with the same label, or a new space at
-its path if none is open), names the tab after `label` (defaults to the
-command), and runs the command there. Manage them with **Add command to
-space…** / **Remove command from space…** in **Space Config**.
+When you're in `~/code/web`, these show up under **Space Commands**. Each
+one opens in its own named tab. You can also add them from the palette with
+**Add command to space…**.
 
-### Custom agent tabs
+### Your agents
 
-Define your own "New … tab" actions under a `tabs` key in the same `config.json`:
+By default, **New Claude tab** starts `claude`. Add your own agents:
 
 ```json
 {
-  "spaces": [],
   "tabs": [
     { "label": "Claude", "command": "claude" },
     { "label": "Codex", "command": "codex" },
@@ -141,217 +112,27 @@ Define your own "New … tab" actions under a `tabs` key in the same `config.jso
 }
 ```
 
-Each entry adds a **New `<label>` tab** row that runs `command` in the new
-tab. `label` is optional (defaults to the command's first word). If there is no
-`tabs` key (or it is invalid or empty), the palette falls back to a single
-**New Claude tab** (`claude`); once you configure it, only your entries are
-shown, so include Claude if you still want it. Read fresh on every open.
+Each one becomes a **New `<label>` tab** action. Once you set `tabs`, only
+your entries are shown, so keep Claude in the list if you still want it.
 
-Rows are styled for scanning: a green `●` marks the current agent, space, or
-id, agent tab names are bold, and preset paths and command method names are
-dim. Styles only use attribute-specific resets (`22`/`39`, never `0`), so the
-inverse-video highlight on the selected row survives them. `truncate` counts
-only the visible characters.
+## Good to know
 
-Rows also get an icon showing what selecting them does: a green `+` for
-anything that creates something (Quick Actions, `config.json` presets, **Add
-space to config…**), a red `−` for anything destructive (**Remove space from
-config…**, and the same destructive registry actions listed above), and `→`
-for anything that switches focus. For the 100+ generated registry actions
-this is inferred from the method name's last `.`-segment (`methodIcon` —
-`*.create` → `+`, `*.close`/`*.stop`/`*.remove`/`*.unlink`/`*.disable`/
-`*.delete` → `−`, anything with `focus` or `*.activate` → `→`); actions that
-don't fit any of those (e.g. `pane.split`, `pane.read`) get no icon. The two
-remaining **Space Config** commands get their own fixed icons: `✎` for **Open
-config.json**, `⧉` for **Copy config.json path**.
+- A few advanced actions aren't in the palette yet, such as sending key
+  combos to a pane. Those take inputs the palette can't prompt for.
+- The palette only asks for an action's required inputs. Optional settings
+  use Herdr's defaults.
+- It's tested on macOS and Windows. Linux isn't supported yet.
 
-## File layout
+## Contributing
 
-```
-herdr-plugin.toml         # manifest: popup pane, open action, prefix+p keybinding
-src/
-  palette.js               # runtime: everything the popup process runs
-  registry.json             # generated, checked in — the action list itself
-scripts/
-  generate-registry.mjs    # dev-time: herdr api schema --json -> registry.json
-  smoke-test.py            # dev-time: drives palette.js through a real pty
-```
-
-## Architecture
-
-**Two stages, generation and runtime, kept deliberately separate** so the
-popup never has to shell out to `herdr` or parse the ~275 KB schema on every
-launch — it just reads a small pre-built JSON file.
-
-### 1. `scripts/generate-registry.mjs` (run manually, not at runtime)
-
-Runs `herdr api schema --json`, walks `schemas.request.oneOf` (one entry per
-socket method: `{method: {const}, params: {$ref}}`) plus the referenced
-`$defs`, and writes `src/registry.json`: one entry per method with:
-
-- `title` — derived mechanically from the method name (`pane.wait_for_output`
-  → "Pane: Wait For Output"), no hand-authored copy for 100+ entries.
-- `category` — the method's first dot-segment.
-- `params[]` — every top-level property of that method's params schema, each
-  tagged with a `kind`:
-  - `"enum"` when the property is a `$ref` to a def with an `enum` array
-    (values included).
-  - `"id"` when the property name matches a small hardcoded map
-    (`ENTITY_LIST_SOURCE` in the script: `pane_id`/`target_pane_id`/
-    `source_pane_id` → `pane.list`, `workspace_id`/`source_workspace_id` →
-    `workspace.list`, `tab_id` → `tab.list`, `plugin_id` → `plugin.list`, and
-    `target` → `agent.list` when the method is under `agent.*`). This mapping
-    is **not** derivable from the schema itself — it's tribal knowledge about
-    what those id strings mean, encoded once here.
-  - `"string"` / `"number"` / `"integer"` / `"boolean"` for plain scalars.
-  - `"object"` / `"array"` for anything else (nested objects, arrays) — these
-    are marked `promptable: false`.
-- `hasUnsupportedRequiredParams` — true when any *required* param isn't
-  promptable. Those 13 actions (as of protocol 22 — e.g. `pane.send_keys`'s
-  `keys` array, `layout.apply`'s tree, `events.subscribe`'s subscription
-  list) are filtered out of the palette entirely rather than invoked with
-  missing required fields. See **Known limitations** below.
-
-Regenerate after upgrading Herdr:
+To see how it works, run it from source, or extend it, read
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). For local development, link a
+checkout instead of installing:
 
 ```bash
-node scripts/generate-registry.mjs
+herdr plugin link ~/code/atd-herdr-command-palette
 ```
 
-It prints the count written and re-lists any unsupported actions.
+## License
 
-### 2. `src/palette.js` (the popup process, zero npm dependencies)
-
-Launched by Herdr as the manifest's `[[panes]] placement = "popup"`
-entrypoint — a session-modal terminal that owns all keyboard input until its
-process exits (which closes the popup). Everything lives in this one file:
-
-- **Socket client** (`callMethod`) — opens a fresh `net.createConnection` to
-  `HERDR_SOCKET_PATH` per call, writes one `{id, method, params}` line, reads
-  one response line, closes. This is not a simplification for v1 — it's
-  required: Herdr's socket really does close after one response (confirmed
-  by directly probing the running server; a second write on the same
-  connection gets `EPIPE`). No reconnect/keep-alive logic exists because none
-  is needed.
-- **Fuzzy matcher** (`fuzzyMatch`, `rankItems`) — an in-house subsequence
-  scorer (~30 lines): bonus for matching at the start of the string or right
-  after a separator (space/`:`/`.`/`_`/`-`), bonus for consecutive runs,
-  small penalty for longer targets. No `fzf` dependency, no npm package.
-- **Raw-mode UI primitives** (`parseKeys`, `pickFromList`, `promptText`,
-  `waitForAnyKey`) — hand-rolled ANSI TUI. Every render is a full-screen
-  redraw (`\x1b[2J\x1b[H` then the whole frame); there's no partial/diff
-  rendering. `parseKeys` only recognizes plain chars, Enter, Backspace,
-  Ctrl+C, Escape, and Up/Down arrows — no Home/End/PageUp/mouse/etc.
-- **Main flow** (`main`) — a `while (true)` loop:
-  1. Show one fuzzy list (`pickFromList`) combining, in order: currently running
-     agents (from a one-time `agent.list` + `tab.list` + `workspace.list` call
-     at startup, each row rendered as two stacked lines — `<workspace label>`
-     then `<agent> — <tab label>` — via `pickFromList`'s `getDisplay` option,
-     current agent marked with a green `●` and sorted first), then all open
-     workspaces (from that same `workspace.list` call, one row per workspace,
-     current workspace marked with `●` and sorted first), then the
-     predefined spaces from `config.json` (`loadSpacePresets`, see
-     **Predefined spaces**), then all actions
-     where `!hasUnsupportedRequiredParams`. The list is
-     rendered with non-selectable group headers (`pickFromList`'s `getGroup`
-     option) — an "Agents" header over the agent rows, a "Spaces" header over
-     the workspace rows, a "New Space" header over the presets, then one header per action `category` (`Agent`,
-     `Pane`, `Tab`, `Workspace`, ...). Headers are inferred purely from item
-     order, so they only look right when same-group items are contiguous,
-     which holds here because `registry.json` is generated sorted by method
-     name (grouping categories together) and the agent/workspace rows are
-     contiguous blocks prepended before them, in that order. Escape here
-     exits the whole palette. Picking an agent row calls `agent.focus`
-     directly with that agent's pane id, and picking a workspace row calls
-     `workspace.focus` with that workspace's id, and picking a preset calls
-     `workspace.create` with its path/label and `focus: true` — all exit
-     immediately, no result screen, no param prompts, since the target is
-     already known.
-  2. For a selected **action** (not an agent row), walk its **required** params in order
-     (optional params are never prompted — always omitted). Each param is
-     either another `pickFromList` (enum values, or a live `*.list` lookup
-     for `"id"` params, pre-sorted so the value matching
-     `HERDR_PLUGIN_CONTEXT_JSON`'s focused pane/workspace/tab sorts first) or
-     a `promptText` free-text prompt. Escape on the *first* required param
-     returns to the top-level action list (not full exit); Escape on any
-     later param steps back one param.
-  3. If the method is in the `DESTRUCTIVE` set, show one more confirm
-     `pickFromList` ("Yes — `<title>`" / "No, cancel"). Cancelling returns to
-     the top-level list without calling anything.
-  4. Call the method for real, render the JSON result or `{code, message}`
-     error, wait for any keypress, then exit the process (closing the
-     popup). The palette is single-shot by design — one action per open,
-     matching the plan — not a persistent session.
-- `LIST_SHAPES` is the other hardcoded table this depends on: for each
-  `*.list` socket method, which array field holds the rows
-  (`panes`/`workspaces`/`tabs`/`agents`/`plugins`), which field is the id,
-  and how to render a human label. Confirmed against real responses from the
-  running server, not guessed from docs (see git history / this session's
-  transcript for the actual probed shapes).
-
-## Known limitations
-
-- **13 of 102 methods are excluded** because their required params are
-  arrays or nested objects (`hasUnsupportedRequiredParams: true`). Notably
-  this means **you can't send arbitrary key combos or text-with-newlines
-  through the palette** (`pane.send_keys`, `agent.send_keys` need a `keys`
-  array) — only plain single-line string/number/boolean/enum/id params are
-  supported. Extending this would mean teaching `generate-registry.mjs` to
-  emit a descriptor for array-of-string params and teaching `palette.js` a
-  comma-separated-list prompt type.
-- **Optional params are never offered**, only required ones. E.g.
-  `notification.show`'s optional `position`/`sound` can't be set from the
-  palette even though the schema supports them. This was a deliberate v1
-  scope cut, not an oversight.
-- **`platforms = ["macos", "windows"]`** in the manifest. Linux is untested.
-  On Windows, `HERDR_SOCKET_PATH` points at a marker file, not a Unix socket
-  (connecting to it gives `ENOTSOCK`); the real endpoint is the named pipe
-  `\\.\pipe\<HERDR_SOCKET_PATH>`, which `callMethod` dials. Other platform differences: the config
-  dir falls back to `%APPDATA%\herdr\...`, "Copy config.json path" uses `clip`
-  instead of `pbcopy`, and "Open config.json" falls back to `notepad` and
-  double-quotes the path.
-- **No automated regression suite**, just `scripts/smoke-test.py` (manual,
-  see below). It checks a handful of representative paths, not all 89
-  actions.
-- Not marketplace-published (no `herdr-plugin` GitHub topic, no CI).
-
-## Testing
-
-There's no unit test framework here — the interesting logic is an
-interactive raw-mode TUI, and Herdr popups have no pane ID and aren't
-reachable through `pane.*` APIs, so you can't script keystrokes into a
-*running popup* over the socket. Instead:
-
-```bash
-python3 scripts/smoke-test.py
-```
-
-This spawns `node src/palette.js` directly under a real pty (Python's
-stdlib `pty` module) with the same env vars Herdr would inject, and drives
-it through four scenarios: a zero-param action executed for real (`ping`),
-an enum-param action with Escape back-navigation (`pane.split`, never
-executed), the destructive-confirm gate choosing cancel (`server.stop`,
-never executed), and the live dynamic id-picker (`pane.focus` pulling real
-`pane.list` data). It exits 0 only if every scenario exited cleanly with no
-crash text in its output. Run it from inside a Herdr pane (so
-`HERDR_SOCKET_PATH` is already set) or export it manually first.
-
-This is the same script used to verify the initial implementation — rerun it
-after any change to `palette.js` or after regenerating the registry.
-
-## Extending
-
-- **New prompt kind for array params**: add a `kind: "string_list"` (or
-  similar) case in `generate-registry.mjs`'s `resolveProp`/`PROMPTABLE_KINDS`
-  for `{type: "array", items: {type: "string"}}` shapes, then handle it in
-  `promptOneParam` in `palette.js` (e.g. a `promptText` whose value is split
-  on commas before being sent).
-- **Offer optional params too**: after the required-param loop in `main`,
-  add an optional "add another field?" step that lists `action.params`
-  where `!required && promptable`.
-- **New destructive method**: just add its method name to the `DESTRUCTIVE`
-  set in `palette.js`. Nothing else needs to change.
-- **New id-entity mapping**: add a name → `*.list` method entry to
-  `ENTITY_LIST_SOURCE` in `generate-registry.mjs`, then add the matching
-  `LIST_SHAPES` entry in `palette.js` describing how to read that list
-  method's response.
+[MIT](LICENSE)

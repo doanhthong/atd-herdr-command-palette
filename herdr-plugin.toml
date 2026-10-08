@@ -2,7 +2,7 @@ id = "atd.command-palette"
 name = "Command Palette"
 version = "0.1.0"
 min_herdr_version = "0.9.0"
-description = "Fuzzy-searchable command palette over the full Herdr socket API"
+description = "Every Herdr action one keystroke away. Jump between agents, spin up agent tabs, and run project commands from a single palette"
 platforms = ["macos", "windows"]
 
 [[panes]]
