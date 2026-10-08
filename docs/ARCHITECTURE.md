@@ -72,7 +72,7 @@ Destructive methods needing confirmation: `server.stop`, `pane.close`,
 ## File layout
 
 ```
-herdr-plugin.toml         # manifest: popup pane, open action, prefix+p keybinding
+herdr-plugin.toml         # manifest: popup pane, open action, prefix+t keybinding
 src/
   palette.js               # runtime: everything the popup process runs
   registry.json             # generated, checked in — the action list itself

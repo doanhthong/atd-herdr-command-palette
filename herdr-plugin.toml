@@ -20,7 +20,7 @@ contexts = ["workspace"]
 command = ["herdr", "plugin", "pane", "open", "--plugin", "atd.command-palette", "--entrypoint", "palette"]
 
 [[keys.command]]
-key = "prefix+p"
+key = "prefix+t"
 type = "plugin_action"
 command = "atd.command-palette.open"
 description = "open command palette"

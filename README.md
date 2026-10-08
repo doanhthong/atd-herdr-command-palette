@@ -2,7 +2,7 @@
 
 **Every Herdr action, one keystroke away. Built for working with coding agents.**
 
-Press `prefix+p`, type a few letters, hit Enter. Jump to any running agent,
+Press `prefix+t`, type a few letters, hit Enter. Jump to any running agent,
 spin up a new Claude (or Codex, or Pi) tab in any project, launch your dev
 server, or run any of Herdr's 100+ actions without remembering a single
 command.
@@ -39,7 +39,7 @@ herdr plugin install doanhthong/atd-herdr-command-palette
 herdr server stop   # restart Herdr to load the plugin and its keybinding
 ```
 
-Then press **`prefix+p`** inside Herdr.
+Then press **`prefix+t`** inside Herdr.
 
 ## What's in the palette
 
